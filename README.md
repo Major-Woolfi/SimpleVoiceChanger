@@ -1,76 +1,44 @@
-# Awesome Project — краткий слоган проекта в одну строку
+# SimpleVoiceChanger
 
-[![Stars](https://img.shields.io/github/stars/Major-Woolfi/SimpleVoiceChanger?style=social)](https://github.com/Major-Woolfi/SimpleVoiceChanger/stargazers)
-[![Issues](https://img.shields.io/github/issues/Major-Woolfi/SimpleVoiceChanger)](https://github.com/Major-Woolfi/SimpleVoiceChanger/issues)
-[![License](https://img.shields.io/github/license/Major-Woolfi/SimpleVoiceChanger)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Major-Woolfi/.github/blob/main/community/CONTRIBUTING.md)
-![Status](https://img.shields.io/badge/Status-active-brightgreen)
+Быстрый и лёгкий стрим-войсчейнжер для Windows и Android.
 
-[🐛 Сообщить о баге](https://github.com/Major-Woolfi/SimpleVoiceChanger/issues/new) •
-[💡 Предложить идею](https://github.com/Major-Woolfi/SimpleVoiceChanger/discussions)
+![GitHub stars](https://img.shields.io/github/stars/Major-Woolfi/SimpleVoiceChanger?style=social)
 
 ---
-
-## 📑 Содержание
-
-- [Awesome Project — краткий слоган проекта в одну строку](#awesome-project--краткий-слоган-проекта-в-одну-строку)
-  - [📑 Содержание](#-содержание)
-  - [📖 Описание проекта](#-описание-проекта)
-    - [Идея и концепция](#идея-и-концепция)
-    - [Полное описание](#полное-описание)
-    - [Для кого этот проект](#для-кого-этот-проект)
-  - [✨ Реализованные фичи](#-реализованные-фичи)
-  - [🚀 Быстрый старт](#-быстрый-старт)
-    - [Предварительные требования](#предварительные-требования)
-    - [Установка](#установка)
-    - [Конфигурация](#конфигурация)
-    - [Запуск](#запуск)
-    - [Проверка](#проверка)
-  - [🏗️ Архитектура проекта](#️-архитектура-проекта)
-  - [🛠️ Технологический стек](#️-технологический-стек)
-  - [🗺️ ROADMAP](#️-roadmap)
-  - [📊 Статистика проекта](#-статистика-проекта)
-  - [🤝 Контрибьюция](#-контрибьюция)
-  - [👥 Авторы и благодарности](#-авторы-и-благодарности)
-  - [📄 Лицензия](#-лицензия)
 
 ## 📖 Описание проекта
 
-### Идея и концепция
+**SimpleVoiceChanger** — это приложение, перехватывающее звук с микрофона и отдающее уже обработанный голос с минимальной задержкой. Работает в фоне без прерываний.
 
-**SimpleVoiceChanger** — это проект, созданный для решения конкретной задачи: {ОПИСАНИЕ_ПРОБЛЕМЫ}.
+### Возможности
 
-Основная идея проекта родилась из необходимости {ОПИСАНИЕ_НУЖНОСТИ}. Проект воплощает подход {ОПИСАНИЕ_ПОДХОДА}, что позволяет {РЕЗУЛЬТАТ}.
+- **15 аудиоэффектов** с плавной настройкой силы от 0% до 100%
+- **2-слойная система обработки**: шумоподавление (AntiNoise + Noise Suppressor) → все остальные эффекты
+- **Пресеты**: сохранение, загрузка, импорт и экспорт настроек в JSON
+- **Тёмная и светлая темы**
+- **Работа в фоне** без прерываний
+- **Перекрёстная платформа**: Windows 10/11 (.exe), Android armv8 10+ (.apk)
+- **Мультиязычность**: 7 языков переводов
 
-### Полное описание
+### Эффекты
 
-{РАСШИРЕННОЕ_ОПИСАНИЕ_ПРОЕКТА}
-
-Проект ориентирован на {ТАРГЕТ_АУДИТОРИЯ} и решает следующие задачи:
-
-- {ЗАДАЧА_1}
-- {ЗАДАЧА_2}
-- {ЗАДАЧА_3}
-
-Ключевые принципы проекта:
-
-1. **{ПРИНЦИП_1}** — {ОПИСАНИЕ_ПРИНЦИПА_1}
-2. **{ПРИНЦИП_2}** — {ОПИСАНИЕ_ПРИНЦИПА_2}
-3. **{ПРИНЦИП_3}** — {ОПИСАНИЕ_ПРИНЦИПА_3}
-
-### Для кого этот проект
-
-- {АУДИТОРИЯ_1}
-- {АУДИТОРИЯ_2}
-- {АУДИТОРИЯ_3}
-
----
-
-## ✨ Реализованные фичи
-
-Реализовано и работоспособно:
-
-- Фича
+| Эффект | Описание | Слой |
+|--------|----------|------|
+| AntiNoise | Умное активное шумоподавление | 1 (шум) |
+| Noise Suppressor | Удаление фонового шума | 1 (шум) |
+| Low Cut | Удаление низких частот и гула | 2 |
+| High Cut | Удаление высоких частот | 2 |
+| Formant | Изменение тембра без изменения ноты | 2 |
+| Compressor | Выравнивание громкости | 2 |
+| Radio Effect | Звук как из радио | 2 |
+| Reverb | Эхо и ощущение помещения | 2 |
+| Distortion | Грязное и жёсткое звучание | 2 |
+| Saturation | Плотное искажение звука | 2 |
+| Harmony Engine | Дополнительные голоса поют вместе | 2 |
+| Chorus | Несколько голосов одновременно | 2 |
+| Flanger | Плавающее металлическое звучание | 2 |
+| Phaser | Движущийся космический эффект | 2 |
+| Doubler | Один голос записан дважды | 2 |
 
 ---
 
@@ -78,136 +46,153 @@
 
 ### Предварительные требования
 
-- Зависимости
-  - {ВЕРСИЯ_ЯЗЫКА_ИЛИ_RUNTIME} или новее
-  - {ЗАВИСИМОСТЬ_1}
-  - {ЗАВИСИМОСТЬ_2}
-- Железо (выделеное под бота, минимум для запуска и корректной работы)
-  - CPU ... ядро ...Ггц
-  - RAM ...
-  - ROM ...
+- **Go 1.23** или новее
+- **Windows 10/11** (для .exe)
+- **Android SDK** (для .apk)
 
-### Установка
+### Сборка (Windows)
 
-```bash
-# Клонируйте репозиторий
-git clone https://github.com/Major-Woolfi/SimpleVoiceChanger.git
-cd SimpleVoiceChanger
+```bat
+BUILD.bat
 ```
 
-### Конфигурация
-
-```bash
-# Скопируйте файл переменных окружения
-cp .env.example .env
-# Отредактируйте .env под ваши нужды
-```
+Результат: файлы в `BUILD/`:
+- `BUILD/SimpleVoiceChanger.exe`
+- `BUILD/SimpleVoiceChanger.apk`
 
 ### Запуск
 
 ```bash
-# Локально
-{КОМАНДА_ЗАПУСКА}
-
-# Через Docker
-docker build -t SimpleVoiceChanger .
-docker run -d --name SimpleVoiceChanger --env-file .env SimpleVoiceChanger
+go run main.go
 ```
-
-### Проверка
-
-После запуска убедитесь, что:
-
-- [ ] {ПРОВЕРКА_1}
-- [ ] {ПРОВЕРКА_2}
-- [ ] {ПРОВЕРКА_3}
 
 ---
 
-## 🏗️ Архитектура проекта
+## 🗂 Структура проекта
 
-```plaintext
+```
 SimpleVoiceChanger/
-├── {MAIN_ENTRY}              # Точка входа приложения
-├── {CONFIG_FILE}             # Конфигурация проекта
-├── .env.example              # Пример переменных окружения
-├── {REQUIREMENTS_FILE}       # Зависимости
-├── {DOCKER_FILE}             # Docker-образ
-├── {DEPLOY_SCRIPT}           # Скрипт деплоя
-├── {DOCS_DIR}/               # Документация
-│   ├── ROADMAP.md
-│   └── CONTRIBUTING.md
-├── {SRC_DIR}/                # Исходный код
-├── {TESTS_DIR}/              # Тесты
-├── {DATA_DIR}/               # Данные / кэш
-└── README.md                 # Этот файл
+├── main.go                    # Точка входа
+├── go.mod                     # Зависимости
+├── BUILD.bat                  # Скрипт сборки
+├── audio/                     # Ядро обработки звука
+│   ├── engine.go              # Аудиодвижок (захват → обработка → воспроизведение)
+│   ├── types.go               # Типы аудио
+│   ├── buffer.go              # Кольцевой буфер
+│   └── config.go              # Аудиоконфигурация
+├── effects/                   # Все 15 эффектов
+│   ├── effect.go              # Интерфейс эффекта
+│   ├── registry.go            # Реестр эффектов
+│   ├── antinoise.go           # AntiNoise (шумоподавление)
+│   ├── noise_suppressor.go    # Noise Suppressor
+│   ├── low_cut.go             # Low Cut
+│   ├── high_cut.go            # High Cut
+│   ├── formant.go             # Formant
+│   ├── compressor.go          # Compressor
+│   ├── radio.go               # Radio Effect
+│   ├── reverb.go              # Reverb
+│   ├── distortion.go          # Distortion
+│   ├── saturation.go          # Saturation
+│   ├── harmony.go             # Harmony Engine
+│   ├── chorus.go              # Chorus
+│   ├── flanger.go             # Flanger
+│   ├── phaser.go              # Phaser
+│   └── doubler.go             # Doubler
+├── gui/                       # GUI (Fyne)
+│   ├── app.go                 # Главное приложение
+│   ├── mainmenu.go            # Главное меню
+│   ├── effects.go             # Панель эффектов
+│   ├── preset.go              # Управление пресетами
+│   ├── settings.go            # Настройки приложения
+│   └── theme.go               # Управление темами
+├── core/                      # Основная логика
+│   ├── config.go              # Конфигурация приложения
+│   ├── preset.go              # Управление пресетами
+│   └── voice_test.go          # Тестирование голоса
+├── i18n/                      # Переводы (JSON)
+│   ├── en.json                # English
+│   ├── ru.json                # Русский
+│   ├── uk.json                # Українська
+│   ├── de.json                # Deutsch
+│   ├── fr.json                # Français
+│   ├── es.json                # Español
+│   └── zh.json                # 中文
+├── internal/
+│   ├── platform/              # Платформенный код
+│   └── service/               # Сервис фонового запуска
+├── tests/                     # Тесты
+└── BUILD/                     # Артефакты сборки
 ```
 
 ---
 
-## 🛠️ Технологический стек
+## ⚙️ Конфигурация
 
-| Категория    | Технологии |
-| ------------ | ---------- |
-| **Backend**  | ...        |
-| **Frontend** | ...        |
-| **Database** | ...        |
-| **DevOps**   | ...        |
-| **Testing**  | ...        |
+Настройки хранятся в `core/config.go` и сохраняются в JSON. Доступны через GUI:
 
----
+- Выбор темы (тёмная/светлая)
+- Частота дискретизации
+- Размер буфера
+- Автозапуск
+- Сворачивание в трей
 
-## 🗺️ ROADMAP
+### Импорт/Экспорт пресетов
 
-- [x] ✅ v1.0.0 — Базовый функционал
-- [x] ✅ v1.1.0 — Добавлена API интеграция
-- [ ] 🔨 v1.2.0 — Поддержка плагинов *(в процессе)*
-- [ ] ⏳ v2.0.0 — Мобильное приложение
-- [ ] ⏳ v2.1.0 — AI-интеграция
-- [ ] 💭 v3.0.0 — Мультиязычность
-
-Полный план — в [ROADMAP](https://github.com/Major-Woolfi/SimpleVoiceChanger/ROADMAP.md).
+Пресеты сохраняются как `.json` файлы с полным набором настроек эффектов.
 
 ---
 
-## 📊 Статистика проекта
+## 🏗 Архитектура
 
-| Метрика        | Значение                                                                                                                                                              |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ⭐ Stars        | [![Stars](https://img.shields.io/github/stars/Major-Woolfi/SimpleVoiceChanger)](https://github.com/Major-Woolfi/SimpleVoiceChanger/stargazers)                        |
-| 🍴 Forks        | [![Forks](https://img.shields.io/github/forks/Major-Woolfi/SimpleVoiceChanger)](https://github.com/Major-Woolfi/SimpleVoiceChanger/network/members)                   |
-| 🐛 Issues       | [![Issues](https://img.shields.io/github/issues/Major-Woolfi/SimpleVoiceChanger)](https://github.com/Major-Woolfi/SimpleVoiceChanger/issues)                          |
-| 👥 Contributors | [![Contributors](https://img.shields.io/github/contributors/Major-Woolfi/SimpleVoiceChanger)](https://github.com/Major-Woolfi/SimpleVoiceChanger/graphs/contributors) |
+### Аудиопайплайн
 
----
+```
+Микрофон → RingBuffer → [Noise Layer] → [Effect Layer] → Динамик
+```
 
-## 🤝 Контрибьюция
+**Слой 1 (Noise):** AntiNoise → Noise Suppressor
+**Слой 2 (Effects):** Low Cut → High Cut → Formant → Compressor → Radio → Reverb → Distortion → Saturation → Harmony → Chorus → Flanger → Phaser → Doubler
 
-Приветствуем любые вклад в проект! Перед созданием PR обязательно прочитай:
+Каждый эффект пропускается если сила = 0%.
 
-- 📋 [CONTRIBUTING](https://github.com/Major-Woolfi/.github/blob/main/community/CONTRIBUTING.md) — правила участия
-- 💬 [CODE OF CONDUCT](https://github.com/Major-Woolfi/.github/blob/main/community/CODE_OF_CONDUCT.md) — кодекс поведения
-- 🐛 [ISSUE TEMPLATE](https://github.com/Major-Woolfi/.github/tree/main/community/ISSUES.md) — шаблоны багов и фич
-- 🔀 [PULL REQUEST TEMPLATE](https://github.com/Major-Woolfi/.github/blob/main/community/PULL_REQUEST_TEMPLATE.md) — требования к PR
+### Платформы
 
-Все общие правила хранятся в [репозитории `.github`](https://github.com/Major-Woolfi/.github) в папке `community`.
+- **Windows**: WASAPI через `go-wasapi`, GUI на Fyne
+- **Android**: Gomobile bind, нативный Android UI с Go ядром
 
 ---
 
-## 👥 Авторы и благодарности
+## 🌐 Локализация
 
-<a href="https://github.com/Major-Woolfi/SimpleVoiceChanger/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Major-Woolfi/SimpleVoiceChanger" />
-</a>
+Переводы в `i18n/` — отдельные `.json` файлы. Текущая поддержка:
+
+| Язык | Код |
+|------|-----|
+| Русский | ru |
+| English | en |
+| Українська | uk |
+| Deutsch | de |
+| Français | fr |
+| Español | es |
+| 中文 | zh |
+
+---
+
+## 📊 Статус
+
+| Компонент | Статус |
+|-----------|--------|
+| Аудиодвижок | Реализован |
+| Эффекты (15/15) | Реализованы |
+| GUI | Реализован |
+| Пресеты | Реализованы |
+| Переводы (7) | Реализованы |
+| Windows сборка | Скрипт готов |
+| Android сборка | Скрипт готов |
+| Тесты | Базовые |
 
 ---
 
 ## 📄 Лицензия
 
-Этот проект распространяется под лицензией **MIT**. Подробности в файле [LICENSE](LICENSE).
-
----
-
-**⭐ Поставь звезду, если проект понравился!**
-
-**[📧 Контакты](https://Major_Woolfi.t.me)**
+MIT License — см. [LICENSE](LICENSE)
