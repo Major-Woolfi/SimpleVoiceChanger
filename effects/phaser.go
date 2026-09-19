@@ -37,7 +37,7 @@ func (p *Phaser) Process(samples []float32, strength float64) {
 		for j := 0; j < len(p.stages); j++ {
 			f := 0.5 + math.Sin(p.phase+float64(j)*0.5)*0.3*strength
 			alpha := float32(f * 0.1 * strength)
-			val = float64(p.stages[j]) + alpha*(val - float64(p.stages[j]))
+			val = float64(p.stages[j]) + float64(alpha)*(val-float64(p.stages[j]))
 			p.stages[j] = float32(val)
 			p.fpos[j] = (p.fpos[j] + 1) % 64
 		}
@@ -45,6 +45,6 @@ func (p *Phaser) Process(samples []float32, strength float64) {
 		if p.phase > math.Pi*2 {
 			p.phase -= math.Pi * 2
 		}
-		samples[i] += float32(float64(s)*mix*0.3)
+		samples[i] += float32(float64(s) * mix * 0.3)
 	}
 }

@@ -1,4 +1,4 @@
-package internal/platform
+package platform
 
 type WindowsAudio struct{}
 

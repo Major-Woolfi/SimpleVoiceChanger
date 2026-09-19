@@ -4,10 +4,10 @@ import "math"
 
 type Doubler struct {
 	BaseEffect
-	phase  float64
+	phase       float64
 	delayBuffer []float32
-	bufSize int
-	bufPos  int
+	bufSize     int
+	bufPos      int
 }
 
 func NewDoubler() *Doubler {
@@ -44,7 +44,7 @@ func (d *Doubler) Process(samples []float32, strength float64) {
 		}
 		doubled := d.delayBuffer[readPos]
 		detune := float64(s) * (0.99 + math.Sin(d.phase*3.0)*0.01*strength)
-		samples[i] = float32(float64(s)*(1.0-mix) + (doubled+float32(detune))*mix*0.5)
+		samples[i] = float32(float64(s)*(1.0-mix) + float64(doubled+float32(detune))*mix*0.5)
 		d.phase += 0.003 * strength
 		if d.phase > math.Pi*2 {
 			d.phase -= math.Pi * 2

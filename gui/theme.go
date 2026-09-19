@@ -1,8 +1,8 @@
 package gui
 
 import (
-	"fyne-io/fyne/v2/theme"
-	"github.com/Major-Woolfi/SimpleVoiceChanger/core"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 )
 
 type ThemeManager struct {
@@ -28,12 +28,12 @@ func (t *ThemeManager) GetTheme() string {
 }
 
 func (t *ThemeManager) ApplyTo(app interface {
-	Settings() theme.Settings
+	Settings() fyne.Settings
 }) {
 	if t.currentTheme == "light" {
-		_ = app.Settings().SetTheme(theme.LightTheme())
+		app.Settings().SetTheme(theme.LightTheme())
 	} else {
-		_ = app.Settings().SetTheme(theme.DarkTheme())
+		app.Settings().SetTheme(theme.DarkTheme())
 	}
 }
 

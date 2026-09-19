@@ -1,7 +1,5 @@
 package effects
 
-import "math"
-
 type RadioEffect struct {
 	BaseEffect
 	state float32
@@ -22,7 +20,6 @@ func (r *RadioEffect) Process(samples []float32, strength float64) {
 		return
 	}
 	for i, s := range samples {
-		absS := math.Abs(float64(s))
 		clipped := float64(s) * (1.0 + strength*2.0)
 		if clipped > 1.0 {
 			clipped = 1.0

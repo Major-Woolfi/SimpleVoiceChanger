@@ -1,10 +1,10 @@
 package gui
 
 import (
-	"fyne-io/fyne/v2"
-	"fyne-io/fyne/v2/widget"
-	"fyne-io/fyne/v2/container"
-	"fyne-io/fyne/v2/layout"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 	"github.com/Major-Woolfi/SimpleVoiceChanger/core"
 )
 
@@ -27,28 +27,25 @@ func (s *SettingsPanel) Build() fyne.CanvasObject {
 	bufferSizeEntry := widget.NewEntry()
 	bufferSizeEntry.SetText("512")
 
-	themeSelect := widget.NewSelect([]string{"dark", "light"}, func(s string) {
-		s.config.Theme = s
+	themeSelect := widget.NewSelect([]string{"dark", "light"}, func(theme string) {
+		s.config.Theme = theme
 	})
-	themeSelect.SetText(s.config.Theme)
+	themeSelect.SetSelected(s.config.Theme)
 
 	autostartCheck := widget.NewCheck("", nil)
-
 	minimizeTrayCheck := widget.NewCheck("", nil)
 
 	return container.New(
 		layout.NewFormLayout(),
-		widget.NewLabel(""),
-		widget.NewLabel(""),
 		widget.NewLabel("Sample Rate"),
 		sampleRateEntry,
 		widget.NewLabel("Buffer Size"),
 		bufferSizeEntry,
-		widget.NewLabel("Тема"),
+		widget.NewLabel("Theme"),
 		themeSelect,
+		widget.NewLabel("Autostart"),
 		autostartCheck,
-		widget.NewLabel(""),
+		widget.NewLabel("Minimize to tray"),
 		minimizeTrayCheck,
-		widget.NewLabel(""),
 	)
 }

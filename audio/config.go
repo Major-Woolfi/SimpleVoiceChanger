@@ -1,10 +1,10 @@
 package audio
 
 type Config struct {
-	SampleRate int
-	BufferSize int
-	Channels   int
-	InputDevice string
+	SampleRate   int
+	BufferSize   int
+	Channels     int
+	InputDevice  string
 	OutputDevice string
 }
 

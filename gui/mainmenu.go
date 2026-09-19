@@ -1,10 +1,10 @@
 package gui
 
 import (
-	"fyne-io/fyne/v2"
-	"fyne-io/fyne/v2/widget"
-	"fyne-io/fyne/v2/container"
-	"fyne-io/fyne/v2/layout"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 	"github.com/Major-Woolfi/SimpleVoiceChanger/core"
 )
 
@@ -13,7 +13,7 @@ type MainMenu struct {
 	toggleBtn  *widget.Button
 	presetBtn  *widget.Button
 	testBtn    *widget.Button
-	presetMenu *widget.PopupMenu
+	presetMenu *widget.PopUpMenu
 }
 
 func NewMainMenu(app *App, config *core.AppConfig) *MainMenu {
@@ -33,24 +33,13 @@ func (m *MainMenu) Build(config *core.AppConfig) fyne.CanvasObject {
 	m.presetBtn.Text = "Выбрать пресет"
 	m.testBtn.Text = "Проверить голос"
 
-	presets := []string{}
-	for _, name := range config.ActivePresets {
-		presets = append(presets, name)
-	}
-	if len(presets) == 0 {
-		presets = append(presets, "Нет сохранённых пресетов")
-	}
-	m.presetMenu = widget.NewPopupMenu(presets, func(s string) {
-		config.SelectedPreset = s
-	})
-
 	presetBtn := widget.NewButton("Выбрать пресет", func() {
-		m.presetMenu.ShowAtPointer()
+		m.showPresetMenu(config)
 	})
 	presetBtn.Importance = widget.LowImportance
 
 	topRow := container.New(
-		layout.NewGridWithColumns(3),
+		layout.NewGridLayoutWithColumns(3),
 		container.NewVBox(m.toggleBtn),
 		container.NewVBox(presetBtn),
 		container.NewVBox(m.testBtn),
@@ -63,4 +52,25 @@ func (m *MainMenu) Build(config *core.AppConfig) fyne.CanvasObject {
 	bottomRow := container.NewVBox(layout.NewSpacer(), statusLabel)
 
 	return container.NewBorder(topRow, nil, nil, nil, bottomRow)
+}
+
+func (m *MainMenu) showPresetMenu(config *core.AppConfig) {
+	canvas := m.app.window.Canvas()
+	if canvas == nil {
+		return
+	}
+
+	items := []*fyne.MenuItem{}
+	for _, name := range config.ActivePresets {
+		name := name
+		items = append(items, fyne.NewMenuItem(name, func() {
+			config.SelectedPreset = name
+		}))
+	}
+	if len(items) == 0 {
+		items = append(items, fyne.NewMenuItem("Нет сохранённых пресетов", func() {}))
+	}
+
+	menu := widget.NewPopUpMenu(fyne.NewMenu("Пресеты", items...), canvas)
+	menu.ShowAtPosition(fyne.NewPos(10, 10))
 }

@@ -4,7 +4,7 @@ import "math"
 
 type Chorus struct {
 	BaseEffect
-	phase  float64
+	phase float64
 }
 
 func NewChorus() *Chorus {
@@ -22,7 +22,7 @@ func (c *Chorus) Process(samples []float32, strength float64) {
 		return
 	}
 	mix := strength * 0.5
-	for i, s := range samples {
+	for i := range samples {
 		for _, rate := range []float64{0.7, 0.9, 1.1} {
 			offset := int(math.Sin(c.phase*rate)*8.0) + len(samples)/4
 			if offset >= 0 && offset < len(samples) {

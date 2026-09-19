@@ -34,7 +34,7 @@ func (h *HarmonyEngine) Process(samples []float32, strength float64) {
 			added += float64(s) * weight * strength * 0.2
 		}
 		h.phase += 0.01 * strength
-		if h.phase > math.Pi * 2 {
+		if h.phase > math.Pi*2 {
 			h.phase -= math.Pi * 2
 		}
 		samples[i] = float32(added)

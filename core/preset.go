@@ -8,9 +8,9 @@ import (
 )
 
 type EffectPreset struct {
-	Name     string             `json:"name"`
-	Effects  map[string]float64 `json:"effects"`
-	Created  string             `json:"created,omitempty"`
+	Name    string             `json:"name"`
+	Effects map[string]float64 `json:"effects"`
+	Created string             `json:"created,omitempty"`
 }
 
 type PresetManager struct {

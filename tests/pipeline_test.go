@@ -16,7 +16,7 @@ func TestPresetJSON(t *testing.T) {
 		Name: "test",
 		Effects: map[string]float64{
 			"compressor": 50,
-			"reverb": 25,
+			"reverb":     25,
 		},
 	}
 	data, err := json.Marshal(p)

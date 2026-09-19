@@ -15,12 +15,11 @@ func NewRingBuffer(size int) *RingBuffer {
 }
 
 func (r *RingBuffer) Write(samples []float32) int {
-	for i, s := range samples {
+	for _, s := range samples {
 		r.data[r.writePos] = s
 		r.writePos = (r.writePos + 1) % r.size
 		if r.writePos == r.readPos {
 			r.readPos = (r.readPos + 1) % r.size
-			_ = i
 		}
 	}
 	return len(samples)

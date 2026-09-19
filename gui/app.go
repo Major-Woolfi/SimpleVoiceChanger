@@ -1,12 +1,12 @@
 package gui
 
 import (
-	"fyne-io/fyne/v2"
-	"fyne-io/fyne/v2/app"
-	"fyne-io/fyne/v2/theme"
-	"fyne-io/fyne/v2/widget"
-	"fyne-io/fyne/v2/container"
-	"fyne-io/fyne/v2/layout"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/Major-Woolfi/SimpleVoiceChanger/core"
 )
 
@@ -15,7 +15,7 @@ type App struct {
 	window  fyne.Window
 	config  *core.AppConfig
 	running bool
-	engine interface {
+	engine  interface {
 		Start() error
 		Stop()
 		SetEffectStrength(name string, strength float64)
@@ -24,8 +24,11 @@ type App struct {
 }
 
 func NewApp() *App {
-	a := app.NewWithID("github.com.Major-Woolfi.SimpleVoiceChanger")
+	a := app.NewWithID("github.com/Major-Woolfi.SimpleVoiceChanger")
 	a.Settings().SetTheme(theme.DarkTheme())
+	if icon, err := fyne.LoadResourceFromPath("assets/icons/mic.svg"); err == nil {
+		a.SetIcon(icon)
+	}
 	w := a.NewWindow("SimpleVoiceChanger")
 	w.Resize(fyne.NewSize(800, 600))
 	w.SetFixedSize(true)
@@ -82,7 +85,7 @@ func (a *App) buildMainMenu() fyne.CanvasObject {
 	toggleBtn.Importance = widget.HighImportance
 
 	presetSelect := widget.NewSelect([]string{}, func(s string) {})
-	presetSelect.SetPlaceHolder("Выбрать пресет")
+	presetSelect.PlaceHolder = "Выбрать пресет"
 
 	testBtn := widget.NewButton("", func() {})
 
@@ -90,7 +93,6 @@ func (a *App) buildMainMenu() fyne.CanvasObject {
 	exportBtn := widget.NewButton("", func() {})
 
 	topRow := container.NewHBox(layout.NewSpacer(), toggleBtn, layout.NewSpacer(), presetSelect, layout.NewSpacer(), testBtn, layout.NewSpacer(), importBtn, exportBtn, layout.NewSpacer())
-	_ = a.config
 	return topRow
 }
 

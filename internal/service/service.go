@@ -1,4 +1,4 @@
-package internal.service
+package service
 
 import (
 	"sync"
@@ -7,8 +7,8 @@ import (
 )
 
 type Service struct {
-	engine *audio.Engine
-	mu     sync.RWMutex
+	engine  *audio.Engine
+	mu      sync.RWMutex
 	running bool
 }
 

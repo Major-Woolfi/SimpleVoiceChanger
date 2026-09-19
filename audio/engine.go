@@ -8,21 +8,21 @@ import (
 )
 
 type Engine struct {
-	running      int32
-	sampleRate   int
-	bufferSize   int
-	input        CaptureSource
-	output       PlaybackSink
-	pipeline     *Pipeline
-	effectStren  map[string]float64
-	mu           sync.RWMutex
-	stopCh       chan struct{}
-	doneCh       chan struct{}
+	running     int32
+	sampleRate  int
+	bufferSize  int
+	input       CaptureSource
+	output      PlaybackSink
+	pipeline    *Pipeline
+	effectStren map[string]float64
+	mu          sync.RWMutex
+	stopCh      chan struct{}
+	doneCh      chan struct{}
 }
 
 type Pipeline struct {
-	noiseLayer   []effects.Effect
-	effectLayer  []effects.Effect
+	noiseLayer  []effects.Effect
+	effectLayer []effects.Effect
 }
 
 func NewEngine(sampleRate, bufferSize int) *Engine {

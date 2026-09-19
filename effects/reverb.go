@@ -2,8 +2,8 @@ package effects
 
 type Reverb struct {
 	BaseEffect
-	delays   []float32
-	delays2  []float32
+	delays   [][]float32
+	delays2  [][]float32
 	pos      []int
 	pos2     []int
 	feedback float64
@@ -21,8 +21,8 @@ func NewReverb() *Reverb {
 			strength: 0,
 			category: "spatial",
 		},
-		delays:   []float32{d1, d2, d3, d4},
-		delays2:  []float32{d1, d2, d3, d4},
+		delays:   [][]float32{d1, d2, d3, d4},
+		delays2:  [][]float32{d1, d2, d3, d4},
 		pos:      []int{0, 0, 0, 0},
 		pos2:     []int{0, 0, 0, 0},
 		feedback: 0.5,
@@ -42,7 +42,5 @@ func (r *Reverb) Process(samples []float32, strength float64) {
 			r.pos[d] = (r.pos[d] + 1) % len(r.delays[d])
 			samples[i] += float32(float64(delayed) * mix * 0.25)
 		}
-		_ = delays2 := r.delays2
-		_ = pos2 := r.pos2
 	}
 }

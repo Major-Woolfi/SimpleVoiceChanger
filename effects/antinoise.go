@@ -28,7 +28,6 @@ func (a *AntiNoise) Process(samples []float32, strength float64) {
 	if len(samples) < windowSize {
 		return
 	}
-	factors := []float64{0.5, 0.3, 0.15, 0.05}
 	for i := 0; i <= len(samples)-windowSize; i += windowSize {
 		end := i + windowSize
 		if end > len(samples) {
@@ -55,6 +54,5 @@ func (a *AntiNoise) Process(samples []float32, strength float64) {
 				samples[j] = float32(float64(samples[j]) * (1.0 - (1.0-strength)*0.3))
 			}
 		}
-		_ = factors
 	}
 }

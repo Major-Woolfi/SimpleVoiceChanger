@@ -7,26 +7,26 @@ import (
 )
 
 type AppConfig struct {
-	Enabled       bool              `json:"enabled"`
-	SampleRate    int               `json:"sample_rate"`
-	BufferSize    int               `json:"buffer_size"`
-	Theme         string            `json:"theme"`
-	EffectStren   map[string]float64 `json:"effect_strengths"`
-	SelectedPreset string           `json:"selected_preset"`
-	ActivePresets []string          `json:"active_presets"`
-	PresetsDir    string            `json:"-"`
-	ConfigDir     string            `json:"-"`
+	Enabled        bool               `json:"enabled"`
+	SampleRate     int                `json:"sample_rate"`
+	BufferSize     int                `json:"buffer_size"`
+	Theme          string             `json:"theme"`
+	EffectStren    map[string]float64 `json:"effect_strengths"`
+	SelectedPreset string             `json:"selected_preset"`
+	ActivePresets  []string           `json:"active_presets"`
+	PresetsDir     string             `json:"-"`
+	ConfigDir      string             `json:"-"`
 }
 
 func DefaultAppConfig() *AppConfig {
 	return &AppConfig{
-		Enabled:     false,
-		SampleRate:  48000,
-		BufferSize:  512,
-		Theme:       "dark",
-		EffectStren: map[string]float64{},
+		Enabled:        false,
+		SampleRate:     48000,
+		BufferSize:     512,
+		Theme:          "dark",
+		EffectStren:    map[string]float64{},
 		SelectedPreset: "",
-		ActivePresets: []string{},
+		ActivePresets:  []string{},
 	}
 }
 

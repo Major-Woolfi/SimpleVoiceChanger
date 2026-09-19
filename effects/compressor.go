@@ -4,9 +4,9 @@ import "math"
 
 type Compressor struct {
 	BaseEffect
-	ratio   float64
-	attack  float64
-	release float64
+	ratio    float64
+	attack   float64
+	release  float64
 	envelope float64
 }
 
@@ -28,13 +28,12 @@ func (c *Compressor) Process(samples []float32, strength float64) {
 		return
 	}
 	threshold := 0.3 * strength
-	ratio := c.ratio - 1.0
 	for i, s := range samples {
 		absS := math.Abs(float64(s))
 		var gain float64 = 1.0
 		if absS > threshold {
 			excess := absS - threshold
-			gain = 1.0 - (excess * (1.0 - 1.0/c.ratio) / absS) * strength
+			gain = 1.0 - (excess*(1.0-1.0/c.ratio)/absS)*strength
 		}
 		if gain > c.envelope {
 			c.envelope += (gain - c.envelope) * c.attack
@@ -42,6 +41,5 @@ func (c *Compressor) Process(samples []float32, strength float64) {
 			c.envelope += (gain - c.envelope) * c.release
 		}
 		samples[i] = float32(float64(s) * c.envelope * (0.5 + strength*0.5))
-		_ = math.Sqrt
 	}
 }

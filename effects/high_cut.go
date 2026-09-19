@@ -4,8 +4,8 @@ import "math"
 
 type HighCut struct {
 	BaseEffect
-	cutoff  float64
-	state   float32
+	cutoff float64
+	state  float32
 }
 
 func NewHighCut() *HighCut {
