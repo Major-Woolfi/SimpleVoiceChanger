@@ -17,23 +17,19 @@ type MainMenu struct {
 }
 
 func NewMainMenu(app *App, config *core.AppConfig) *MainMenu {
-	m := &MainMenu{
-		app: app,
-	}
-	m.toggleBtn = widget.NewButton("", func() {
-		app.Toggle()
-	})
+	m := &MainMenu{app: app}
+	m.toggleBtn = widget.NewButton("", func() { app.Toggle() })
 	m.presetBtn = widget.NewButton("", func() {})
 	m.testBtn = widget.NewButton("", func() {})
 	return m
 }
 
 func (m *MainMenu) Build(config *core.AppConfig) fyne.CanvasObject {
-	m.toggleBtn.Text = "Включить голосовой чейнджер"
-	m.presetBtn.Text = "Выбрать пресет"
-	m.testBtn.Text = "Проверить голос"
+	m.toggleBtn.Text = m.app.t("toggle_voice_changer")
+	m.presetBtn.Text = m.app.t("select_preset")
+	m.testBtn.Text = m.app.t("test_voice")
 
-	presetBtn := widget.NewButton("Выбрать пресет", func() {
+	presetBtn := widget.NewButton(m.app.t("select_preset"), func() {
 		m.showPresetMenu(config)
 	})
 	presetBtn.Importance = widget.LowImportance
@@ -45,9 +41,9 @@ func (m *MainMenu) Build(config *core.AppConfig) fyne.CanvasObject {
 		container.NewVBox(m.testBtn),
 	)
 
-	statusLabel := widget.NewLabel("Статус: Остановлен")
+	statusLabel := widget.NewLabel(m.app.t("status") + ": " + m.app.t("stopped"))
 	if config.Enabled {
-		statusLabel.SetText("Статус: Работает")
+		statusLabel.SetText(m.app.t("status") + ": " + m.app.t("running"))
 	}
 	bottomRow := container.NewVBox(layout.NewSpacer(), statusLabel)
 
@@ -68,9 +64,9 @@ func (m *MainMenu) showPresetMenu(config *core.AppConfig) {
 		}))
 	}
 	if len(items) == 0 {
-		items = append(items, fyne.NewMenuItem("Нет сохранённых пресетов", func() {}))
+		items = append(items, fyne.NewMenuItem(m.app.t("no_presets"), func() {}))
 	}
 
-	menu := widget.NewPopUpMenu(fyne.NewMenu("Пресеты", items...), canvas)
+	menu := widget.NewPopUpMenu(fyne.NewMenu(m.app.t("presets"), items...), canvas)
 	menu.ShowAtPosition(fyne.NewPos(10, 10))
 }

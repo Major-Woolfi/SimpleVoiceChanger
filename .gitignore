@@ -1,2 +1,10 @@
-# --- Build ---
 BUILD/
+*.exe
+*.apk
+*.syso
+
+modcache/
+gopath/
+
+svc-build/
+gomobile-tmp/

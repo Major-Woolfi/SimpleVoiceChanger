@@ -1,0 +1,11 @@
+{
+  "active_presets": null,
+  "buffer_size": 512,
+  "effect_strengths": {
+    "reverb": 30
+  },
+  "enabled": true,
+  "sample_rate": 48000,
+  "selected_preset": "",
+  "theme": "dark"
+}

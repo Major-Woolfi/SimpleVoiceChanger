@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	fyne.io/fyne/v2 v2.8.1
+	github.com/gordonklaus/portaudio v0.0.0-20260203164431-765aa7dfa631
 	golang.org/x/mobile v0.0.0-20260908204917-8b95e45f8d3e
 )
 
