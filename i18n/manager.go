@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -22,11 +23,11 @@ type Locale struct {
 
 // Manager loads and caches locales.
 type Manager struct {
-	mu                sync.RWMutex
-	locales           map[string]*Locale
-	current           string
-	fallback          string
-	localeChangeCb    func()
+	mu             sync.RWMutex
+	locales        map[string]*Locale
+	current        string
+	fallback       string
+	localeChangeCb func()
 }
 
 // NewManager creates a manager and loads all JSON files from dir.
@@ -118,15 +119,20 @@ func (m *Manager) SetLocaleChangeCallback(cb func()) {
 	m.localeChangeCb = cb
 }
 
-// SetLocale switches the active language.
+// SetLocale switches the active language. It only notifies listeners when the
+// active locale actually changes, preventing redundant UI rebuilds.
 func (m *Manager) SetLocale(code string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if _, ok := m.locales[code]; ok {
-		m.current = code
-		if m.localeChangeCb != nil {
-			go m.localeChangeCb()
-		}
+	if _, ok := m.locales[code]; !ok {
+		return
+	}
+	if m.current == code {
+		return
+	}
+	m.current = code
+	if m.localeChangeCb != nil {
+		go m.localeChangeCb()
 	}
 }
 
@@ -149,12 +155,9 @@ func (m *Manager) T() T {
 }
 
 func translate(loc, fallback *Locale, key string, args []interface{}) string {
-	val := ""
-	if loc != nil {
-		val = loc.Data[key]
-	}
-	if val == "" && fallback != nil {
-		val = fallback.Data[key]
+	val := lookupLocale(loc, key)
+	if val == "" {
+		val = lookupLocale(fallback, key)
 	}
 	if val == "" {
 		return key
@@ -162,16 +165,26 @@ func translate(loc, fallback *Locale, key string, args []interface{}) string {
 	return interpolate(val, args)
 }
 
-func interpolate(format string, args []interface{}) string {
-	if len(args) == 0 {
-		return format
+// lookupLocale checks Data first, then the standalone Formats map so
+// format strings (e.g. effect_strength_format) resolve correctly.
+func lookupLocale(l *Locale, key string) string {
+	if l == nil {
+		return ""
 	}
+	if v, ok := l.Data[key]; ok {
+		return v
+	}
+	return l.Formats[key]
+}
+
+func interpolate(format string, args []interface{}) string {
 	out := format
 	for i, a := range args {
 		ph := placeholderFor(i)
 		out = replaceFirst(out, ph, argString(a))
 	}
-	return out
+	// Collapse remaining fmt-style escapes (e.g. "%%" -> "%").
+	return strings.ReplaceAll(out, "%%", "%")
 }
 
 func placeholderFor(i int) string {
@@ -191,7 +204,7 @@ func argString(a interface{}) string {
 	case int64:
 		return itoa(int(v))
 	case float64:
-		return ftoa(v)
+		return fmt.Sprintf("%g", v)
 	case bool:
 		if v {
 			return "true"
@@ -239,10 +252,6 @@ func itoa(i int) string {
 		buf[j] = '-'
 	}
 	return string(buf[j:])
-}
-
-func ftoa(f float64) string {
-	return itoa(int(f))
 }
 
 var formatKeys = []string{

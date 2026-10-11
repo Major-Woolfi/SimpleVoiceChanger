@@ -1,11 +1,13 @@
 package audio
 
-// NewCapture creates a platform-appropriate capture source.
-func NewCapture(sampleRate, bufferSize int) CaptureSource {
-	return newPlatformCapture(sampleRate, bufferSize)
+// NewCapture creates a platform-appropriate capture source. An empty
+// deviceName selects the system default input device.
+func NewCapture(sampleRate, bufferSize int, deviceName string) CaptureSource {
+	return newPlatformCapture(sampleRate, bufferSize, deviceName)
 }
 
-// NewPlayback creates a platform-appropriate playback sink.
-func NewPlayback(sampleRate, bufferSize int) PlaybackSink {
-	return newPlatformPlayback(sampleRate, bufferSize)
+// NewPlayback creates a platform-appropriate playback sink. An empty
+// deviceName selects the system default output device.
+func NewPlayback(sampleRate, bufferSize int, deviceName string) PlaybackSink {
+	return newPlatformPlayback(sampleRate, bufferSize, deviceName)
 }

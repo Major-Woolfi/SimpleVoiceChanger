@@ -5,6 +5,8 @@ import "math"
 type Chorus struct {
 	BaseEffect
 	phase float64
+	buf   []float32
+	pos   int
 }
 
 func NewChorus() *Chorus {
@@ -14,6 +16,7 @@ func NewChorus() *Chorus {
 			strength: 0,
 			category: "voices",
 		},
+		buf: make([]float32, 4800),
 	}
 }
 
@@ -21,18 +24,27 @@ func (c *Chorus) Process(samples []float32, strength float64) {
 	if strength <= 0 {
 		return
 	}
-	mix := strength * 0.5
-	for i := range samples {
-		for _, rate := range []float64{0.7, 0.9, 1.1} {
-			offset := int(math.Sin(c.phase*rate)*8.0) + len(samples)/4
-			if offset >= 0 && offset < len(samples) {
-				weight := math.Sin(c.phase*rate) * mix * 0.3
-				samples[i] += float32(float64(samples[offset]) * weight * strength)
-			}
+	norm := strength / 100
+	mix := 0.5 * norm
+	// LFO sweeps the delay line between ~12ms and ~29ms at 0.25-0.7Hz so the
+	// voice thickens smoothly instead of warbling (a fast LFO sounds broken).
+	lfoHz := 0.25 + 0.45*norm
+	step := lfoHz * 2 * math.Pi / 48000
+	const base = 600
+	const maxDepth = 800.0
+	for i, s := range samples {
+		c.buf[c.pos] = s
+		c.pos = (c.pos + 1) % len(c.buf)
+		delay := base + int(maxDepth*(0.5+0.5*math.Sin(c.phase)))
+		read := c.pos - delay
+		if read < 0 {
+			read += len(c.buf)
 		}
-		c.phase += 0.02 * strength
-		if c.phase > math.Pi*2 {
-			c.phase -= math.Pi * 2
+		wet := c.buf[read]
+		samples[i] = float32(float64(s)*(1.0-mix) + float64(wet)*mix)
+		c.phase += step
+		if c.phase > 2*math.Pi {
+			c.phase -= 2 * math.Pi
 		}
 	}
 }

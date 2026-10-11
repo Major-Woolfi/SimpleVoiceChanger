@@ -43,10 +43,11 @@ func (e *EffectsPanel) Build(config *core.AppConfig) fyne.CanvasObject {
 			}
 		}
 		e.sliders[eff.Key] = slider
-		
-		nameLabel := widget.NewLabel(eff.Name)
+		e.labels[eff.Key] = sliderLabel
+
+		nameLabel := widget.NewLabel(e.effectName(eff))
 		nameLabel.TextStyle = fyne.TextStyle{Bold: true}
-		
+
 		descLabel := widget.NewLabel(e.getEffectDescription(eff.Key))
 		descLabel.TextStyle = fyne.TextStyle{Italic: true}
 		descLabel.Wrapping = fyne.TextWrapWord
@@ -64,7 +65,7 @@ func (e *EffectsPanel) Build(config *core.AppConfig) fyne.CanvasObject {
 	sections := make([]fyne.CanvasObject, 0, len(categoryOrder))
 	for _, cat := range categoryOrder {
 		if items, ok := categoryContainers[cat]; ok && len(items) > 0 {
-			catTitle := widget.NewLabel(e.app.t("category_"+cat))
+			catTitle := widget.NewLabel(e.app.t("category_" + cat))
 			catTitle.TextStyle = fyne.TextStyle{Bold: true}
 			sections = append(sections, catTitle)
 			sections = append(sections, container.NewVBox(items...))
@@ -80,29 +81,42 @@ func (e *EffectsPanel) Build(config *core.AppConfig) fyne.CanvasObject {
 }
 
 func (e *EffectsPanel) getEffectDescription(key string) string {
-	descriptions := map[string]string{
-		"antinoise":       "Адаптивное подавление шума на основе анализа спектра",
-		"noise_suppressor": "Шумоподавитель с порогом (gate) для тихих участков",
-		"low_cut":         "Высокочастотный фильтр (удаляет низкие частоты < 80Hz)",
-		"high_cut":        "Низкочастотный фильтр (удаляет высокие частоты > 16kHz)",
-		"formant":         "Сдвиг формант для изменения тембра голоса",
-		"compressor":      "Динамический компрессор (ratio 4:1, attack/release)",
-		"radio":           "Эмуляция радиосигнала с ограничением и шумом",
-		"reverb":          "Реверберация с 4 задержками и обратной связью",
-		"distortion":      "Мягкое насыщение/дисторшн через tanh",
-		"saturation":      "Аналоговая насыщенность с экспоненциальной кривой",
-		"harmony":         "Гармонизатор (добавляет октавы и квинты)",
-		"chorus":          "Хорус с 3 линиями задержки",
-		"flanger":         "Фланжер с модулируемой задержкой",
-		"phaser":          "Фазер с 4 ступенями all-pass фильтров",
-		"doubler":         "Даблер с легким детеуном и задержкой",
-	}
-	if _, ok := descriptions[key]; ok {
-		return e.app.t(key + "_desc")
+	for _, eff := range e.effectsList {
+		if eff.Key == key {
+			return e.app.t(key + "_desc")
+		}
 	}
 	return ""
 }
 
+// SyncFromConfig updates every slider and its label from the given config,
+// so the effects tab reflects strengths loaded from a preset or on startup.
+func (e *EffectsPanel) SyncFromConfig(config *core.AppConfig) {
+	for _, eff := range e.effectsList {
+		slider, ok := e.sliders[eff.Key]
+		if !ok {
+			continue
+		}
+		val := config.EffectStren[eff.Key]
+		slider.SetValue(val)
+		if lbl, ok := e.labels[eff.Key]; ok {
+			e.updateSliderLabel(lbl, eff, val)
+		}
+		slider.Refresh()
+	}
+}
+
 func (e *EffectsPanel) updateSliderLabel(l *widget.Label, eff effects.EffectInfo, value float64) {
-	l.SetText(e.app.t("effect_strength_format", eff.Name, int(value+0.5)))
+	l.SetText(e.app.t("effect_strength_format", e.effectName(eff), int(value+0.5)))
+}
+
+// effectName returns the localized effect name, falling back to the
+// registry name when no translation is available.
+func (e *EffectsPanel) effectName(eff effects.EffectInfo) string {
+	key := eff.Key + "_name"
+	name := e.app.t(key)
+	if name == key {
+		return eff.Name
+	}
+	return name
 }

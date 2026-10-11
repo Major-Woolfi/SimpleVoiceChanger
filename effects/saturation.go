@@ -16,19 +16,25 @@ func NewSaturation() *Saturation {
 	}
 }
 
+// Process applies an exponential waveshaper. The curve is almost linear for
+// small inputs (warmth) and only compresses hard peaks, with the drive
+// growing gradually with strength.
 func (s *Saturation) Process(samples []float32, strength float64) {
 	if strength <= 0 {
 		return
 	}
-	drive := 2.0 + strength*8.0
+	norm := strength / 100
+	drive := 1.0 + 6.0*norm
+	mix := 0.4 + 0.6*norm
+	denom := 1.0 - math.Exp(-drive)
 	for i, sample := range samples {
 		x := float64(sample) * drive
 		var saturated float64
 		if x > 0 {
-			saturated = (1 - math.Exp(-x)) / (1 - math.Exp(-drive))
+			saturated = (1 - math.Exp(-x)) / denom
 		} else {
-			saturated = -(1 - math.Exp(x)) / (1 - math.Exp(-drive))
+			saturated = -(1 - math.Exp(x)) / denom
 		}
-		samples[i] = float32(saturated)
+		samples[i] = float32(float64(sample)*(1.0-mix) + saturated*mix)
 	}
 }

@@ -16,42 +16,52 @@ import (
 )
 
 type App struct {
-	fyneApp   fyne.App
-	window    fyne.Window
-	config    *core.AppConfig
-	running   bool
-	engine    interface {
+	fyneApp fyne.App
+	window  fyne.Window
+	config  *core.AppConfig
+	running bool
+	engine  interface {
 		Start() error
 		Stop()
 		SetEffectStrength(name string, strength float64)
 		GetEffectStrengths() map[string]float64
+		SelfTest() error
+		SetMonitor(on bool)
+		TestLive(inputDevice, outputDevice string, seconds int) error
 	}
-	service  interface {
+	service interface {
 		Start() error
 		Stop()
 	}
-	i18n     *i18n.Manager
-	t        i18n.T
-	themeMgr *ThemeManager
-	content  *fyne.Container
-	tabs     *container.AppTabs
-	toggleBtn *widget.Button
-	statusLbl *widget.Label
-	onToggle  func(enabled bool)
+	i18n              *i18n.Manager
+	t                 i18n.T
+	themeMgr          *ThemeManager
+	content           *fyne.Container
+	tabs              *container.AppTabs
+	toggleBtn         *widget.Button
+	statusLbl         *widget.Label
+	presetPanel       *PresetPanel
+	effectsPanel      *EffectsPanel
+	presetSelect      *widget.Select
+	syncing           bool
+	onToggle          func(enabled bool)
+	onSettingsApplied func()
 }
 
 func NewApp() *App {
-	a := app.NewWithID("github.com/Major-Woolfi.SimpleVoiceChanger")
-	
+	return newAppWith(app.NewWithID("com.majorwoolfi.simplevoicechanger"))
+}
+
+func newAppWith(a fyne.App) *App {
 	icon := loadAppIcon()
 	if icon != nil {
 		a.SetIcon(icon)
 	}
-	
+
 	w := a.NewWindow("SimpleVoiceChanger")
 	w.Resize(fyne.NewSize(900, 650))
 	w.SetMaster()
-	
+
 	cfg := core.DefaultAppConfig()
 	cfg.Init(core.DefaultDirectories())
 
@@ -63,17 +73,17 @@ func NewApp() *App {
 	themeMgr.SetTheme(cfg.Theme)
 
 	app := &App{
-		fyneApp:   a,
-		window:    w,
-		config:    cfg,
-		running:   false,
-		i18n:      mgr,
-		t:         t,
-		themeMgr:  themeMgr,
+		fyneApp:  a,
+		window:   w,
+		config:   cfg,
+		running:  false,
+		i18n:     mgr,
+		t:        t,
+		themeMgr: themeMgr,
 	}
 
 	mgr.SetLocaleChangeCallback(app.onLocaleChange)
-	
+
 	return app
 }
 
@@ -124,8 +134,89 @@ func (a *App) T() i18n.T {
 	return a.t
 }
 
+// SetLocale switches the UI language. It is a no-op for unknown codes.
+func (a *App) SetLocale(code string) {
+	if code != "" {
+		a.i18n.SetLocale(code)
+	}
+}
+
 func (a *App) SetConfig(config *core.AppConfig) {
 	a.config = config
+}
+
+// loadPresetInto applies the named preset to the engine and the config,
+// updates the effect sliders and persists the choice. Selecting a preset in
+// the UI therefore takes effect immediately instead of only marking it.
+func (a *App) loadPresetInto(name string) error {
+	if name == "" {
+		return nil
+	}
+	preset, err := a.config.LoadPreset(name)
+	if err != nil {
+		return err
+	}
+	if a.config.EffectStren == nil {
+		a.config.EffectStren = make(map[string]float64)
+	}
+	for k, v := range preset.Effects {
+		a.config.EffectStren[k] = v
+		if a.engine != nil {
+			a.engine.SetEffectStrength(k, v)
+		}
+	}
+	a.config.SelectedPreset = name
+	_ = a.config.Save()
+	a.RefreshEffectSliders()
+	return nil
+}
+
+// applyPresetSelection keeps the main-menu select, the preset list and the
+// name entry in sync when a preset is chosen anywhere in the UI, and applies
+// its effects so the change is audible right away.
+func (a *App) applyPresetSelection(name string) {
+	if a.syncing {
+		return
+	}
+	a.syncing = true
+	defer func() { a.syncing = false }()
+
+	a.config.SelectedPreset = name
+	if a.presetSelect != nil {
+		a.presetSelect.SetSelected(name)
+	}
+	if a.presetPanel != nil {
+		a.presetPanel.SelectByName(name)
+	}
+	if err := a.loadPresetInto(name); err != nil {
+		a.ShowError(a.t("error"), err.Error())
+	}
+}
+
+// RefreshPresetSelect rebuilds the main-menu preset options after the
+// preset list changes (save/delete/import) and restores the selection.
+func (a *App) RefreshPresetSelect() {
+	if a.presetSelect == nil {
+		return
+	}
+	a.syncing = true
+	defer func() { a.syncing = false }()
+
+	a.presetSelect.Options = a.config.ActivePresets
+	a.presetSelect.Refresh()
+	if a.config.SelectedPreset != "" {
+		a.presetSelect.SetSelected(a.config.SelectedPreset)
+	} else {
+		a.presetSelect.ClearSelected()
+	}
+}
+
+// RefreshEffectSliders pushes the current config strengths into the effects
+// tab sliders (used after loading a preset).
+func (a *App) RefreshEffectSliders() {
+	if a.effectsPanel != nil {
+		a.effectsPanel.SyncFromConfig(a.config)
+	}
 }
 
 func (a *App) SetEngine(engine interface {
@@ -133,6 +224,9 @@ func (a *App) SetEngine(engine interface {
 	Stop()
 	SetEffectStrength(name string, strength float64)
 	GetEffectStrengths() map[string]float64
+	SelfTest() error
+	SetMonitor(on bool)
+	TestLive(inputDevice, outputDevice string, seconds int) error
 }) {
 	a.engine = engine
 }
@@ -146,6 +240,21 @@ func (a *App) SetService(service interface {
 
 func (a *App) SetOnToggle(fn func(enabled bool)) {
 	a.onToggle = fn
+}
+
+// SetOnSettingsApplied registers a callback invoked when audio settings
+// (sample rate, buffer size or devices) change so the audio chain can be
+// rebuilt live.
+func (a *App) SetOnSettingsApplied(fn func()) {
+	a.onSettingsApplied = fn
+}
+
+// rebuildAudio asks the host to rebuild the audio chain from the current
+// configuration (used after device or format changes).
+func (a *App) rebuildAudio() {
+	if a.onSettingsApplied != nil {
+		a.onSettingsApplied()
+	}
 }
 
 func (a *App) Toggle() {
@@ -198,11 +307,14 @@ func (a *App) buildMainMenu() fyne.CanvasObject {
 	a.toggleBtn = toggleBtn
 
 	presetSelect := widget.NewSelect(a.config.ActivePresets, func(s string) {
-		a.config.SelectedPreset = s
+		a.applyPresetSelection(s)
 	})
 	presetSelect.PlaceHolder = a.t("select_preset")
+	a.presetSelect = presetSelect
 	if a.config.SelectedPreset != "" {
+		a.syncing = true
 		presetSelect.SetSelected(a.config.SelectedPreset)
+		a.syncing = false
 	}
 
 	testBtn := widget.NewButton(a.t("test_voice"), func() {
@@ -238,49 +350,44 @@ func (a *App) buildMainMenu() fyne.CanvasObject {
 }
 
 func (a *App) testVoice() {
+	if a.engine == nil {
+		a.ShowError(a.t("error"), a.t("audio_init_failed"))
+		return
+	}
 	a.ShowInfo(a.t("info"), a.t("test_in_progress"))
 	go func() {
+		err := a.engine.TestLive(a.config.InputDevice, a.config.OutputDevice, 6)
 		fyne.Do(func() {
+			if err != nil {
+				a.ShowError(a.t("error"), err.Error())
+				return
+			}
 			a.ShowInfo(a.t("info"), a.t("test_complete"))
 		})
 	}()
 }
 
 func (a *App) importPreset() {
-	dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
-		if err != nil {
-			a.ShowError(a.t("error"), err.Error())
-			return
-		}
-		if reader == nil {
-			return
-		}
-		defer reader.Close()
-		a.ShowInfo(a.t("info"), a.t("import_success"))
-	}, a.window)
+	if a.presetPanel == nil {
+		a.ShowError(a.t("error"), "preset panel unavailable")
+		return
+	}
+	a.presetPanel.importPreset()
 }
 
 func (a *App) exportPreset() {
-	if a.config.SelectedPreset == "" {
-		a.ShowInfo(a.t("warning"), a.t("select_preset"))
+	if a.presetPanel == nil {
+		a.ShowError(a.t("error"), "preset panel unavailable")
 		return
 	}
-	dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
-		if err != nil {
-			a.ShowError(a.t("error"), err.Error())
-			return
-		}
-		if writer == nil {
-			return
-		}
-		defer writer.Close()
-		a.ShowInfo(a.t("info"), a.t("export_success"))
-	}, a.window)
+	a.presetPanel.exportPreset()
 }
 
 func (a *App) buildContent() fyne.CanvasObject {
 	effectsPanel := NewEffectsPanel(a)
 	presetsPanel := NewPresetPanel(a, a.config)
+	a.presetPanel = presetsPanel
+	a.effectsPanel = effectsPanel
 	settingsPanel := NewSettingsPanel(a, a.config)
 
 	a.tabs = container.NewAppTabs(
@@ -302,9 +409,3 @@ func (a *App) ShowError(title, message string) {
 	err := fmt.Errorf("%s: %s", title, message)
 	dialog.ShowError(err, a.window)
 }
-
-func (a *App) ShowWarning(title, message string) {
-	dialog.ShowConfirm(title, message, func(bool) {}, a.window)
-}
-
-var _ = container.NewAppTabs

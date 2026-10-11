@@ -1,8 +1,12 @@
 package effects
 
+import "math"
+
 type RadioEffect struct {
 	BaseEffect
-	state float32
+	hp     float64
+	lp     float64
+	prevIn float64
 }
 
 func NewRadioEffect() *RadioEffect {
@@ -15,20 +19,29 @@ func NewRadioEffect() *RadioEffect {
 	}
 }
 
+// Process emulates an AM radio / telephone channel: a 300-3400 Hz band-pass
+// followed by light overdrive. Strength controls how far the band is cut and
+// how hard the drive hits.
 func (r *RadioEffect) Process(samples []float32, strength float64) {
 	if strength <= 0 {
 		return
 	}
+	norm := strength / 100
+	mix := 0.85 * norm
+	drive := 1.0 + 3.0*norm
+	// One-pole band-pass coefficients at 48 kHz. The band is wide enough to
+	// keep the voice body so higher strengths still sound like a radio, not
+	// silence.
+	aHP := 1.0 / (1.0 + 48000.0/(2.0*math.Pi*250.0))
+	aLP := 1.0 / (1.0 + 48000.0/(2.0*math.Pi*3800.0))
 	for i, s := range samples {
-		clipped := float64(s) * (1.0 + strength*2.0)
-		if clipped > 1.0 {
-			clipped = 1.0
-		}
-		if clipped < -1.0 {
-			clipped = -1.0
-		}
-		mixer := 0.7 * strength
-		r.state += float32(float64(r.state) * 0.95)
-		samples[i] = float32(clipped*mixer + float64(s)*(1.0-mixer) + float64(r.state)*0.05*strength)
+		wide := float64(s)
+		hpY := aHP * (r.hp + wide - r.prevIn)
+		r.hp = hpY
+		r.prevIn = wide
+		lpY := r.lp + aLP*(hpY-r.lp)
+		r.lp = lpY
+		band := math.Tanh(lpY * drive)
+		samples[i] = float32(wide*(1.0-mix) + band*mix)
 	}
 }

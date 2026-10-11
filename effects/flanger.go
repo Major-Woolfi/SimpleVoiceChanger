@@ -27,16 +27,15 @@ func (f *Flanger) Process(samples []float32, strength float64) {
 	if strength <= 0 {
 		return
 	}
-	mix := strength * 0.6
-	depth := 4.0 + strength*10.0
-	rate := 0.1 + strength*0.4
+	norm := strength / 100
+	mix := 0.7 * norm
+	// The delay sweeps from ~0.4ms to ~13ms at 0.1-0.4Hz (slow jet whoosh).
+	lfoHz := 0.1 + 0.3*norm
+	step := lfoHz * 2 * math.Pi / 48000
 	for i, s := range samples {
 		f.buffer[f.bufPos] = s
 		f.bufPos = (f.bufPos + 1) % f.bufSize
-		delaySamples := int(depth + math.Sin(f.phase)*depth*0.5)
-		if delaySamples < 0 {
-			delaySamples = 0
-		}
+		delaySamples := 20 + int(600.0*(0.5+0.5*math.Sin(f.phase)))
 		if delaySamples >= f.bufSize {
 			delaySamples = f.bufSize - 1
 		}
@@ -45,10 +44,10 @@ func (f *Flanger) Process(samples []float32, strength float64) {
 			readPos += f.bufSize
 		}
 		sampled := f.buffer[readPos]
-		f.phase += rate * strength * 0.01
-		if f.phase > math.Pi*2 {
-			f.phase -= math.Pi * 2
+		f.phase += step
+		if f.phase > 2*math.Pi {
+			f.phase -= 2 * math.Pi
 		}
-		samples[i] = float32(float64(s)*(1.0-mix*0.5) + float64(sampled)*mix*0.5)
+		samples[i] = float32(float64(s)*(1.0-mix) + float64(sampled)*mix)
 	}
 }

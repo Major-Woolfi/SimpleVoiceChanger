@@ -7,7 +7,10 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/Major-Woolfi/SimpleVoiceChanger/audio"
 	"github.com/Major-Woolfi/SimpleVoiceChanger/core"
+	"github.com/Major-Woolfi/SimpleVoiceChanger/i18n"
 )
 
 type SettingsPanel struct {
@@ -15,8 +18,12 @@ type SettingsPanel struct {
 	config          *core.AppConfig
 	sampleRateEntry *widget.Entry
 	bufferSizeEntry *widget.Entry
+	inputSelect     *widget.Select
+	outputSelect    *widget.Select
 	themeSelect     *widget.Select
 	langSelect      *widget.Select
+	monitorCheck    *widget.Check
+	updating        bool
 }
 
 func NewSettingsPanel(app *App, config *core.AppConfig) *SettingsPanel {
@@ -24,18 +31,45 @@ func NewSettingsPanel(app *App, config *core.AppConfig) *SettingsPanel {
 }
 
 func (s *SettingsPanel) Build() fyne.CanvasObject {
+	defaultLabel := s.app.t("default_device")
+
 	s.sampleRateEntry = widget.NewEntry()
 	s.sampleRateEntry.SetText(strconv.Itoa(s.config.SampleRate))
 
 	s.bufferSizeEntry = widget.NewEntry()
 	s.bufferSizeEntry.SetText(strconv.Itoa(s.config.BufferSize))
 
-	themeOptions := []string{s.app.t("dark"), s.app.t("light")}
-	s.themeSelect = widget.NewSelect(themeOptions, func(theme string) {
-		s.config.Theme = themeLabelToCode(theme)
-		s.app.themeMgr.SetTheme(s.config.Theme)
+	inputOptions := append([]string{defaultLabel}, audio.ListInputDevices()...)
+	s.inputSelect = widget.NewSelect(inputOptions, func(label string) {
+		if s.updating {
+			return
+		}
+		s.config.InputDevice = deviceNameFromLabel(label, defaultLabel)
+		_ = s.config.Save()
+		s.app.rebuildAudio()
 	})
-	s.themeSelect.SetSelected(themeCodeToLabel(s.config.Theme))
+	s.inputSelect.PlaceHolder = defaultLabel
+
+	outputOptions := append([]string{defaultLabel}, audio.ListOutputDevices()...)
+	s.outputSelect = widget.NewSelect(outputOptions, func(label string) {
+		if s.updating {
+			return
+		}
+		s.config.OutputDevice = deviceNameFromLabel(label, defaultLabel)
+		_ = s.config.Save()
+		s.app.rebuildAudio()
+	})
+	s.outputSelect.PlaceHolder = defaultLabel
+
+	themeOptions := []string{s.app.t("light"), s.app.t("dark")}
+	s.themeSelect = widget.NewSelect(themeOptions, func(theme string) {
+		if s.updating {
+			return
+		}
+		s.config.Theme = themeLabelToCode(s.app.t, theme)
+		s.app.themeMgr.SetTheme(s.config.Theme)
+		_ = s.config.Save()
+	})
 
 	// Language selector uses the raw locale codes.
 	langCodes := []string{"en", "ru", "uk", "de", "fr", "es", "zh"}
@@ -44,15 +78,40 @@ func (s *SettingsPanel) Build() fyne.CanvasObject {
 		langLabels[i] = localeLabel(c)
 	}
 	s.langSelect = widget.NewSelect(langLabels, func(label string) {
+		if s.updating {
+			return
+		}
 		code := localeLabelToCode(label)
+		s.config.Locale = code
+		_ = s.config.Save()
 		s.app.i18n.SetLocale(code)
 	})
-	s.langSelect.SetSelected(localeLabel(s.app.i18n.Current()))
 
-	inputBtn := widget.NewButton(s.app.t("input_device"), func() {})
-	outputBtn := widget.NewButton(s.app.t("output_device"), func() {})
+	// Monitor: when off, the processed voice is never played back through the
+	// output device, so the user does not hear their own voice. Point the
+	// output device at a virtual microphone to feed the changed voice to
+	// other apps/games.
+	s.monitorCheck = widget.NewCheck(s.app.t("monitor"), func(on bool) {
+		s.config.Monitor = on
+		_ = s.config.Save()
+		if s.app.engine != nil {
+			s.app.engine.SetMonitor(on)
+		}
+	})
+
+	// Programmatic SetSelected fires OnChanged in Fyne; suppress it while we
+	// initialise the current values, otherwise the locale callback rebuilds
+	// the whole UI and recurses forever.
+	s.updating = true
+	s.themeSelect.SetSelected(themeCodeToLabel(s.app.t, s.config.Theme))
+	s.langSelect.SetSelected(localeLabel(s.app.i18n.Current()))
+	s.monitorCheck.SetChecked(s.config.Monitor)
+	s.selectInputDevice(defaultLabel)
+	s.selectOutputDevice(defaultLabel)
+	s.updating = false
 
 	saveBtn := widget.NewButton(s.app.t("ok"), func() {
+		oldSampleRate, oldBufferSize := s.config.SampleRate, s.config.BufferSize
 		if v, err := strconv.Atoi(s.sampleRateEntry.Text); err == nil && v > 0 {
 			s.config.SampleRate = v
 		}
@@ -60,39 +119,75 @@ func (s *SettingsPanel) Build() fyne.CanvasObject {
 			s.config.BufferSize = v
 		}
 		_ = s.config.Save()
+		if s.config.SampleRate != oldSampleRate || s.config.BufferSize != oldBufferSize {
+			s.app.rebuildAudio()
+		}
 		s.app.ShowInfo(s.app.t("info"), s.app.t("config_saved"))
 	})
+	saveBtn.Importance = widget.HighImportance
 
-	form := container.New(
-		layout.NewFormLayout(),
-		widget.NewLabel(s.app.t("sample_rate")),
-		s.sampleRateEntry,
-		widget.NewLabel(s.app.t("buffer_size")),
-		s.bufferSizeEntry,
-		widget.NewLabel(s.app.t("theme")),
-		s.themeSelect,
-		widget.NewLabel(s.app.t("language")),
-		s.langSelect,
-		widget.NewLabel(s.app.t("audio_device")),
-		container.NewHBox(inputBtn, outputBtn),
+	grid := container.New(
+		newAdaptiveGridLayout(),
+		s.card("input_device", s.inputSelect),
+		s.card("output_device", s.outputSelect),
+		s.card("sample_rate", s.sampleRateEntry),
+		s.card("buffer_size", s.bufferSizeEntry),
+		s.card("theme", s.themeSelect),
+		s.card("language", s.langSelect),
+		s.card("monitor", s.monitorCheck),
 	)
+
+	hint := widget.NewLabelWithStyle(s.app.t("monitor_hint"), fyne.TextAlignLeading, fyne.TextStyle{Italic: true})
+	hint.Wrapping = fyne.TextWrapWord
 
 	return container.NewVBox(
-		widget.NewLabel(s.app.t("settings")),
-		form,
-		container.NewHBox(layout.NewSpacer(), saveBtn, layout.NewSpacer()),
+		widget.NewLabelWithStyle(s.app.t("settings"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewSeparator(),
+		grid,
+		hint,
+		container.NewHBox(layout.NewSpacer(), saveBtn),
 	)
 }
 
-func themeCodeToLabel(code string) string {
-	if code == "light" {
-		return "Light"
-	}
-	return "Dark"
+// card wraps a labelled control into a settings cell used by the adaptive grid.
+func (s *SettingsPanel) card(labelKey string, control fyne.CanvasObject) fyne.CanvasObject {
+	label := widget.NewLabel(s.app.t(labelKey))
+	label.TextStyle = fyne.TextStyle{Bold: true}
+	return container.NewVBox(label, control)
 }
 
-func themeLabelToCode(label string) string {
-	if label == "Light" {
+func (s *SettingsPanel) selectInputDevice(defaultLabel string) {
+	if s.config.InputDevice == "" {
+		s.inputSelect.SetSelected(defaultLabel)
+		return
+	}
+	s.inputSelect.SetSelected(s.config.InputDevice)
+}
+
+func (s *SettingsPanel) selectOutputDevice(defaultLabel string) {
+	if s.config.OutputDevice == "" {
+		s.outputSelect.SetSelected(defaultLabel)
+		return
+	}
+	s.outputSelect.SetSelected(s.config.OutputDevice)
+}
+
+func deviceNameFromLabel(label, defaultLabel string) string {
+	if label == defaultLabel {
+		return ""
+	}
+	return label
+}
+
+func themeCodeToLabel(t i18n.T, code string) string {
+	if code == "light" {
+		return t("light")
+	}
+	return t("dark")
+}
+
+func themeLabelToCode(t i18n.T, label string) string {
+	if label == t("light") {
 		return "light"
 	}
 	return "dark"

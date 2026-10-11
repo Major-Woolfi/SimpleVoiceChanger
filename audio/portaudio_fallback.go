@@ -2,16 +2,13 @@
 
 package audio
 
-import (
-	"errors"
-	"fmt"
-)
+import "errors"
 
 // ErrAudioUnavailable is returned when audio backend is not available.
 var ErrAudioUnavailable = errors.New("audio backend not available (build with -tags portaudio)")
 
 // NewPortAudioCapture returns an error as portaudio is not enabled.
-func NewPortAudioCapture(sampleRate, bufferSize int) (*PortAudioCapture, error) {
+func NewPortAudioCapture(sampleRate, bufferSize int, deviceName string) (*PortAudioCapture, error) {
 	return nil, ErrAudioUnavailable
 }
 
@@ -29,7 +26,7 @@ func (c *PortAudioCapture) Read(out []float32) (int, error) {
 func (c *PortAudioCapture) Close() {}
 
 // NewPortAudioPlayback returns an error as portaudio is not enabled.
-func NewPortAudioPlayback(sampleRate, bufferSize int) (*PortAudioPlayback, error) {
+func NewPortAudioPlayback(sampleRate, bufferSize int, deviceName string) (*PortAudioPlayback, error) {
 	return nil, ErrAudioUnavailable
 }
 
@@ -45,62 +42,3 @@ func (p *PortAudioPlayback) Write(samples []float32) error {
 }
 
 func (p *PortAudioPlayback) Close() {}
-
-// NewDefaultCapture creates a mock capture source for testing.
-func NewDefaultCapture() *DefaultCapture {
-	return &DefaultCapture{
-		data: make([]float32, 0),
-	}
-}
-
-// DefaultCapture is a mock capture source for testing.
-type DefaultCapture struct {
-	data      []float32
-	pos       int
-	exhausted bool
-}
-
-func (d *DefaultCapture) Open(sampleRate, bufferSize int) error {
-	return nil
-}
-
-func (d *DefaultCapture) Read(out []float32) (int, error) {
-	if d.exhausted {
-		return 0, fmt.Errorf("EOF")
-	}
-	n := 0
-	for i := 0; i < len(out) && d.pos+i < len(d.data); i++ {
-		out[i] = d.data[d.pos+i]
-		n++
-	}
-	d.pos += n
-	if n == 0 || d.pos >= len(d.data) {
-		d.exhausted = true
-	}
-	return n, nil
-}
-
-func (d *DefaultCapture) Close() {}
-
-// NewDefaultPlayback creates a mock playback sink for testing.
-func NewDefaultPlayback() *DefaultPlayback {
-	return &DefaultPlayback{
-		written: make([]float32, 0),
-	}
-}
-
-// DefaultPlayback is a mock playback sink for testing.
-type DefaultPlayback struct {
-	written []float32
-}
-
-func (d *DefaultPlayback) Open(sampleRate, bufferSize int) error {
-	return nil
-}
-
-func (d *DefaultPlayback) Write(samples []float32) error {
-	d.written = append(d.written, samples...)
-	return nil
-}
-
-func (d *DefaultPlayback) Close() {}

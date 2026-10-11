@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/Major-Woolfi/SimpleVoiceChanger/core"
+	"github.com/Major-Woolfi/SimpleVoiceChanger/effects"
 )
 
 type PresetPanel struct {
@@ -57,11 +58,11 @@ func (p *PresetPanel) Build() fyne.CanvasObject {
 		},
 	)
 	p.listWidget.OnSelected = func(id widget.ListItemID) {
-		p.selected = id
-		if id >= 0 && id < len(p.config.ActivePresets) {
-			p.config.SelectedPreset = p.config.ActivePresets[id]
-			p.nameEntry.SetText(p.config.SelectedPreset)
+		if id < 0 || id >= len(p.config.ActivePresets) {
+			return
 		}
+		p.selected = id
+		p.app.applyPresetSelection(p.config.ActivePresets[id])
 	}
 
 	return container.NewBorder(
@@ -78,6 +79,21 @@ func (p *PresetPanel) Build() fyne.CanvasObject {
 	)
 }
 
+// SelectByName highlights the named preset in the list and fills the name
+// entry, keeping the panel consistent with the main-menu selection.
+func (p *PresetPanel) SelectByName(name string) {
+	p.nameEntry.SetText(name)
+	for i, n := range p.config.ActivePresets {
+		if n == name {
+			p.selected = i
+			if p.listWidget != nil {
+				p.listWidget.Select(i)
+			}
+			return
+		}
+	}
+}
+
 func (p *PresetPanel) savePreset() {
 	name := p.nameEntry.Text
 	if name == "" {
@@ -85,11 +101,14 @@ func (p *PresetPanel) savePreset() {
 		return
 	}
 
-	var strengths map[string]float64
+	strengths := make(map[string]float64, len(effects.DefaultEffects()))
+	for _, eff := range effects.DefaultEffects() {
+		strengths[eff.Key] = p.config.EffectStren[eff.Key]
+	}
 	if p.app.engine != nil {
-		strengths = p.app.engine.GetEffectStrengths()
-	} else {
-		strengths = p.config.EffectStren
+		for k, v := range p.app.engine.GetEffectStrengths() {
+			strengths[k] = v
+		}
 	}
 
 	err := p.config.SavePreset(name, strengths)
@@ -102,6 +121,7 @@ func (p *PresetPanel) savePreset() {
 	p.config.ActivePresets = appendIfMissing(p.config.ActivePresets, name)
 	p.nameEntry.SetText("")
 	_ = p.config.Save()
+	p.app.RefreshPresetSelect()
 	p.app.ShowInfo(p.app.t("info"), p.app.t("preset_saved"))
 	p.listWidget.Refresh()
 }
@@ -112,19 +132,10 @@ func (p *PresetPanel) loadPreset() {
 		return
 	}
 
-	preset, err := p.config.LoadPreset(p.config.SelectedPreset)
-	if err != nil {
+	if err := p.app.loadPresetInto(p.config.SelectedPreset); err != nil {
 		p.app.ShowError(p.app.t("error"), err.Error())
 		return
 	}
-
-	if p.app.engine != nil {
-		for k, v := range preset.Effects {
-			p.app.engine.SetEffectStrength(k, v)
-		}
-	}
-	p.config.EffectStren = preset.Effects
-	_ = p.config.Save()
 
 	p.app.ShowInfo(p.app.t("info"), p.app.t("preset_loaded"))
 }
@@ -136,8 +147,13 @@ func (p *PresetPanel) deletePreset() {
 	}
 
 	name := p.config.SelectedPreset
+	name, err := core.SanitizePresetName(name)
+	if err != nil {
+		p.app.ShowError(p.app.t("error"), err.Error())
+		return
+	}
 	presetPath := filepath.Join(p.config.ConfigDir, "presets", name+".json")
-	err := os.Remove(presetPath)
+	err = os.Remove(presetPath)
 	if err != nil {
 		p.app.ShowError(p.app.t("error"), err.Error())
 		return
@@ -147,6 +163,7 @@ func (p *PresetPanel) deletePreset() {
 	p.config.SelectedPreset = ""
 	p.nameEntry.SetText("")
 	_ = p.config.Save()
+	p.app.RefreshPresetSelect()
 	p.app.ShowInfo(p.app.t("info"), p.app.t("preset_deleted"))
 	p.listWidget.Refresh()
 }
@@ -178,6 +195,7 @@ func (p *PresetPanel) importPreset() {
 		p.config.ActivePresets = appendIfMissing(p.config.ActivePresets, preset.Name)
 		_ = p.config.Save()
 		p.listWidget.Refresh()
+		p.app.RefreshPresetSelect()
 		p.app.ShowInfo(p.app.t("info"), p.app.t("import_success"))
 	}, p.app.window)
 }

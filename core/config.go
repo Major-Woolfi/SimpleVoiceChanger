@@ -5,24 +5,72 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"unicode"
 )
+
+// SanitizePresetName validates a preset name and returns it trimmed or an
+// error if it contains path separators, "..", control characters or other
+// unsafe characters. Prevents path traversal when joining with the
+// presets directory.
+func SanitizePresetName(name string) (string, error) {
+	trimmed := trimmedPresetName(name)
+	if trimmed == "" || trimmed == "." || trimmed == ".." {
+		return "", fmt.Errorf("invalid preset name")
+	}
+	if filepath.Base(trimmed) != trimmed {
+		return "", fmt.Errorf("preset name must not contain path separators")
+	}
+	if containsUnsafe(trimmed) {
+		return "", fmt.Errorf("preset name contains unsafe characters")
+	}
+	return trimmed, nil
+}
+
+func trimmedPresetName(name string) string {
+	start := 0
+	end := len(name)
+	for start < end && (name[start] == ' ' || name[start] == '\t' || name[start] == '\r' || name[start] == '\n') {
+		start++
+	}
+	for end > start && (name[end-1] == ' ' || name[end-1] == '\t' || name[end-1] == '\r' || name[end-1] == '\n') {
+		end--
+	}
+	return name[start:end]
+}
+
+func containsUnsafe(s string) bool {
+	for _, r := range s {
+		if r == '/' || r == '\\' || r < 0x20 {
+			return true
+		}
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) &&
+			r != ' ' && r != '_' && r != '-' && r != '.' && r != '(' && r != ')' {
+			return true
+		}
+	}
+	return false
+}
 
 // AppConfig holds the application configuration.
 type AppConfig struct {
-	ConfigDir    string
-	SampleRate   int
-	BufferSize   int
-	Theme        string
-	Enabled      bool
-	EffectStren  map[string]float64
+	ConfigDir      string
+	SampleRate     int
+	BufferSize     int
+	InputDevice    string
+	OutputDevice   string
+	Theme          string
+	Locale         string
+	Enabled        bool
+	Monitor        bool
+	EffectStren    map[string]float64
 	SelectedPreset string
 	ActivePresets  []string
 }
 
 // EffectPreset is a named collection of effect strengths.
 type EffectPreset struct {
-	Name     string             `json:"name"`
-	Effects  map[string]float64 `json:"effects"`
+	Name    string             `json:"name"`
+	Effects map[string]float64 `json:"effects"`
 }
 
 // DefaultAppConfig returns a new AppConfig with sensible defaults.
@@ -62,13 +110,17 @@ func (c *AppConfig) configFileName() string {
 // Save persists the configuration to disk.
 func (c *AppConfig) Save() error {
 	data := map[string]interface{}{
-		"enabled":           c.Enabled,
-		"sample_rate":       c.SampleRate,
-		"buffer_size":       c.BufferSize,
-		"theme":             c.Theme,
-		"effect_strengths":  c.EffectStren,
-		"selected_preset":   c.SelectedPreset,
-		"active_presets":    c.ActivePresets,
+		"enabled":          c.Enabled,
+		"monitor":          c.Monitor,
+		"sample_rate":      c.SampleRate,
+		"buffer_size":      c.BufferSize,
+		"input_device":     c.InputDevice,
+		"output_device":    c.OutputDevice,
+		"theme":            c.Theme,
+		"locale":           c.Locale,
+		"effect_strengths": c.EffectStren,
+		"selected_preset":  c.SelectedPreset,
+		"active_presets":   c.ActivePresets,
 	}
 	raw, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
@@ -93,14 +145,26 @@ func (c *AppConfig) Load() error {
 	if v, ok := data["enabled"].(bool); ok {
 		c.Enabled = v
 	}
+	if v, ok := data["monitor"].(bool); ok {
+		c.Monitor = v
+	}
 	if v, ok := data["sample_rate"].(float64); ok {
 		c.SampleRate = int(v)
 	}
 	if v, ok := data["buffer_size"].(float64); ok {
 		c.BufferSize = int(v)
 	}
+	if v, ok := data["input_device"].(string); ok {
+		c.InputDevice = v
+	}
+	if v, ok := data["output_device"].(string); ok {
+		c.OutputDevice = v
+	}
 	if v, ok := data["theme"].(string); ok {
 		c.Theme = v
+	}
+	if v, ok := data["locale"].(string); ok {
+		c.Locale = v
 	}
 	if v, ok := data["selected_preset"].(string); ok {
 		c.SelectedPreset = v
@@ -128,6 +192,10 @@ func (c *AppConfig) Load() error {
 
 // SavePreset persists a named preset to disk.
 func (c *AppConfig) SavePreset(name string, strengths map[string]float64) error {
+	name, err := SanitizePresetName(name)
+	if err != nil {
+		return err
+	}
 	presetsDir := filepath.Join(c.ConfigDir, "presets")
 	if err := os.MkdirAll(presetsDir, 0755); err != nil {
 		return fmt.Errorf("create presets dir: %w", err)
@@ -142,6 +210,10 @@ func (c *AppConfig) SavePreset(name string, strengths map[string]float64) error 
 
 // LoadPreset reads a named preset from disk.
 func (c *AppConfig) LoadPreset(name string) (*EffectPreset, error) {
+	name, err := SanitizePresetName(name)
+	if err != nil {
+		return nil, err
+	}
 	path := filepath.Join(c.ConfigDir, "presets", name+".json")
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -172,4 +244,29 @@ func (c *AppConfig) ListPresets() ([]string, error) {
 		out = append(out, e.Name()[:len(e.Name())-len(filepath.Ext(e.Name()))])
 	}
 	return out, nil
+}
+
+// SyncPresets merges preset files found on disk into ActivePresets so that
+// presets present in the presets directory are always visible after restart.
+func (c *AppConfig) SyncPresets() {
+	names, err := c.ListPresets()
+	if err != nil {
+		return
+	}
+	known := make(map[string]bool, len(c.ActivePresets))
+	for _, n := range c.ActivePresets {
+		known[n] = true
+	}
+	changed := false
+	for _, n := range names {
+		if n == "" || known[n] {
+			continue
+		}
+		c.ActivePresets = append(c.ActivePresets, n)
+		known[n] = true
+		changed = true
+	}
+	if changed {
+		_ = c.Save()
+	}
 }

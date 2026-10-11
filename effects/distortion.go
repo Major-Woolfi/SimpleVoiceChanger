@@ -16,14 +16,18 @@ func NewDistortion() *Distortion {
 	}
 }
 
+// Process applies a tanh waveshaper whose drive and wet/dry mix scale
+// linearly with strength, so low values give warm breakup instead of turning
+// the voice into a square wave at once.
 func (d *Distortion) Process(samples []float32, strength float64) {
 	if strength <= 0 {
 		return
 	}
-	drive := math.Tanh(strength * 4.0)
+	norm := strength / 100
+	drive := 1.0 + 9.0*norm
+	mix := 0.35 + 0.65*norm
 	for i, s := range samples {
-		x := float64(s) * drive * (1.0 + strength*2.0)
-		clipped := math.Tanh(x)
-		samples[i] = float32(clipped)
+		shaped := math.Tanh(float64(s) * drive)
+		samples[i] = float32(float64(s)*(1.0-mix) + shaped*mix)
 	}
 }
