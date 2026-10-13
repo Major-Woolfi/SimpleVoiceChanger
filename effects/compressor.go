@@ -22,13 +22,13 @@ func (c *Compressor) Process(samples []float32, strength float64) {
 		return
 	}
 	norm := strength / 100
-	threshold := 0.25 + 0.05*norm
-	ratio := 4.0
+	threshold := 0.20 + 0.10*norm
+	ratio := 6.0
 	// 5ms attack and 80ms release: fast enough to catch peaks, slow enough to
 	// avoid the clicky "pumping" distortion that instant smoothing caused.
 	attack := 1.0 - math.Exp(-1.0/(48000.0*0.005))
 	release := 1.0 - math.Exp(-1.0/(48000.0*0.080))
-	makeup := 1.0 + 0.3*norm
+	makeup := 1.0 + 0.8*norm
 	for i, s := range samples {
 		absS := math.Abs(float64(s))
 		gain := 1.0
@@ -41,6 +41,6 @@ func (c *Compressor) Process(samples []float32, strength float64) {
 		} else {
 			c.envelope += (gain - c.envelope) * release
 		}
-		samples[i] = float32(float64(s) * (0.65 + 0.35*c.envelope) * makeup)
+		samples[i] = float32(float64(s) * math.Min(1.15, (0.5+0.5*c.envelope)*makeup))
 	}
 }

@@ -27,7 +27,6 @@ type App struct {
 		GetEffectStrengths() map[string]float64
 		SelfTest() error
 		SetMonitor(on bool)
-		TestLive(inputDevice, outputDevice string, seconds int) error
 	}
 	service interface {
 		Start() error
@@ -43,6 +42,9 @@ type App struct {
 	presetPanel       *PresetPanel
 	effectsPanel      *EffectsPanel
 	presetSelect      *widget.Select
+	testBtn           *widget.Button
+	testing           bool
+	startedForTest    bool
 	syncing           bool
 	onToggle          func(enabled bool)
 	onSettingsApplied func()
@@ -104,6 +106,7 @@ func (a *App) onLocaleChange() {
 func (a *App) rebuildUI() {
 	a.window.SetContent(a.buildContent())
 	a.updateToggleButtonText()
+	a.updateTestButtonText()
 	a.updateStatus()
 }
 
@@ -113,6 +116,16 @@ func (a *App) updateToggleButtonText() {
 			a.toggleBtn.SetText(a.t("toggle_stop"))
 		} else {
 			a.toggleBtn.SetText(a.t("toggle_voice_changer"))
+		}
+	}
+}
+
+func (a *App) updateTestButtonText() {
+	if a.testBtn != nil {
+		if a.testing {
+			a.testBtn.SetText(a.t("test_voice_stop"))
+		} else {
+			a.testBtn.SetText(a.t("test_voice"))
 		}
 	}
 }
@@ -226,7 +239,6 @@ func (a *App) SetEngine(engine interface {
 	GetEffectStrengths() map[string]float64
 	SelfTest() error
 	SetMonitor(on bool)
-	TestLive(inputDevice, outputDevice string, seconds int) error
 }) {
 	a.engine = engine
 }
@@ -257,26 +269,40 @@ func (a *App) rebuildAudio() {
 	}
 }
 
+func (a *App) startAudio() error {
+	if a.service != nil {
+		return a.service.Start()
+	}
+	if a.engine != nil {
+		return a.engine.Start()
+	}
+	return nil
+}
+
+func (a *App) stopAudio() {
+	if a.service != nil {
+		a.service.Stop()
+	} else if a.engine != nil {
+		a.engine.Stop()
+	}
+}
+
 func (a *App) Toggle() {
 	a.running = !a.running
 	if a.running {
-		if a.service != nil {
-			if err := a.service.Start(); err != nil {
-				a.ShowError(a.t("error"), err.Error())
-				a.running = false
-			}
-		} else if a.engine != nil {
-			if err := a.engine.Start(); err != nil {
-				a.ShowError(a.t("error"), err.Error())
-				a.running = false
-			}
+		if err := a.startAudio(); err != nil {
+			a.ShowError(a.t("error"), err.Error())
+			a.running = false
 		}
 	} else {
-		if a.service != nil {
-			a.service.Stop()
-		} else if a.engine != nil {
-			a.engine.Stop()
+		if a.testing {
+			if a.engine != nil {
+				a.engine.SetMonitor(false)
+			}
+			a.testing = false
+			a.updateTestButtonText()
 		}
+		a.stopAudio()
 	}
 	a.updateStatus()
 	a.updateToggleButtonText()
@@ -320,6 +346,7 @@ func (a *App) buildMainMenu() fyne.CanvasObject {
 	testBtn := widget.NewButton(a.t("test_voice"), func() {
 		a.testVoice()
 	})
+	a.testBtn = testBtn
 
 	importBtn := widget.NewButton(a.t("import_preset"), func() {
 		a.importPreset()
@@ -349,22 +376,38 @@ func (a *App) buildMainMenu() fyne.CanvasObject {
 	return container.NewBorder(topRow, nil, nil, nil, bottomRow)
 }
 
+// testVoice toggles a live broadcast of the processed voice to the output
+// device (speakers): the first press starts it, the second stops it. It only
+// affects the test button itself and never touches the main voice-changer
+// button or its status.
 func (a *App) testVoice() {
 	if a.engine == nil {
 		a.ShowError(a.t("error"), a.t("audio_init_failed"))
 		return
 	}
-	a.ShowInfo(a.t("info"), a.t("test_in_progress"))
-	go func() {
-		err := a.engine.TestLive(a.config.InputDevice, a.config.OutputDevice, 6)
-		fyne.Do(func() {
-			if err != nil {
-				a.ShowError(a.t("error"), err.Error())
-				return
-			}
-			a.ShowInfo(a.t("info"), a.t("test_complete"))
-		})
-	}()
+	if a.testing {
+		if a.engine != nil {
+			a.engine.SetMonitor(false)
+		}
+		if a.startedForTest && !a.running {
+			a.stopAudio()
+		}
+		a.testing = false
+		a.updateTestButtonText()
+		return
+	}
+	a.startedForTest = !a.running
+	if !a.running {
+		if err := a.startAudio(); err != nil {
+			a.ShowError(a.t("error"), err.Error())
+			return
+		}
+	}
+	if a.engine != nil {
+		a.engine.SetMonitor(true)
+	}
+	a.testing = true
+	a.updateTestButtonText()
 }
 
 func (a *App) importPreset() {

@@ -18,6 +18,7 @@ func DefaultEffects() []EffectInfo {
 		{Key: "high_cut", Name: "High Cut", Category: "filter"},
 		{Key: "formant", Name: "Formant", Category: "modulation"},
 		{Key: "compressor", Name: "Compressor", Category: "dynamics"},
+		{Key: "amplifier", Name: "Amplifier", Category: "dynamics"},
 		{Key: "radio", Name: "Radio Effect", Category: "modulation"},
 		{Key: "reverb", Name: "Reverb", Category: "spatial"},
 		{Key: "distortion", Name: "Distortion", Category: "modulation"},

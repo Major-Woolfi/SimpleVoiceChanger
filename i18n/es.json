@@ -29,6 +29,7 @@
   "info": "Información",
   "test_in_progress": "Probando la voz...",
   "test_complete": "Prueba completada",
+  "test_voice_stop": "Detener prueba de voz",
   "preset_saved": "Preset guardado",
   "preset_loaded": "Preset cargado",
   "preset_deleted": "Preset eliminado",
@@ -50,6 +51,7 @@
   "high_cut_name": "Corte de agudos",
   "formant_name": "Desplazamiento de formantes",
   "compressor_name": "Compresor",
+  "amplifier_name": "Amplificador",
   "radio_name": "Efecto radio",
   "reverb_name": "Reverberación",
   "distortion_name": "Distorsión",
@@ -65,6 +67,7 @@
   "high_cut_desc": "Filtro paso-bajo (elimina frecuencias altas > 16kHz)",
   "formant_desc": "Desplazamiento de formantes para cambio de timbre vocal",
   "compressor_desc": "Compresor dinámico (ratio 4:1, attack/release)",
+  "amplifier_desc": "Aumento de volumen con limitador suave (hasta 4x)",
   "radio_desc": "Emulación de señal de radio con limitación y ruido",
   "reverb_desc": "Reverberación con 4 líneas de retardo y realimentación",
   "distortion_desc": "Saturación/distorsión suave vía tanh",
@@ -73,7 +76,5 @@
   "chorus_desc": "Coro con 3 voces retardadas",
   "flanger_desc": "Flanger con retardo modulado",
   "phaser_desc": "Phaser con 4 etapas filtros all-pass",
-  "doubler_desc": "Doblador con ligero desafine y retardo",
-  "monitor": "Oír mi propia voz",
-  "monitor_hint": "Si está desactivado, la voz procesada no se reproduce por sus altavoces. Para enviarla a otra aplicación (Discord, juegos), elija un micrófono virtual como dispositivo de salida y active 'Oír mi propia voz'."
+  "doubler_desc": "Doblador con ligero desafine y retardo"
 }

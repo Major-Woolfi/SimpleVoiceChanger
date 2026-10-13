@@ -68,7 +68,7 @@ func (e *EffectsPanel) Build(config *core.AppConfig) fyne.CanvasObject {
 			catTitle := widget.NewLabel(e.app.t("category_" + cat))
 			catTitle.TextStyle = fyne.TextStyle{Bold: true}
 			sections = append(sections, catTitle)
-			sections = append(sections, container.NewVBox(items...))
+			sections = append(sections, container.NewGridWithColumns(2, items...))
 			sections = append(sections, widget.NewSeparator())
 		}
 	}

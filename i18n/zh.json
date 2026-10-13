@@ -29,6 +29,7 @@
   "info": "信息",
   "test_in_progress": "测试进行中...",
   "test_complete": "测试完成",
+  "test_voice_stop": "停止语音测试",
   "preset_saved": "预设已保存",
   "preset_loaded": "预设已加载",
   "preset_deleted": "预设已删除",
@@ -50,6 +51,7 @@
   "high_cut_name": "高切",
   "formant_name": "共振峰偏移",
   "compressor_name": "压缩器",
+  "amplifier_name": "音量放大器",
   "radio_name": "电台效果",
   "reverb_name": "混响",
   "distortion_name": "失真",
@@ -65,6 +67,7 @@
   "high_cut_desc": "低通滤波器（移除高频 > 16kHz）",
   "formant_desc": "共振峰偏移以改变声色",
   "compressor_desc": "动态压缩器（压缩比 4:1，启动/释放）",
+  "amplifier_desc": "带软限幅器的音量增强（最高 4 倍）",
   "radio_desc": "无线电信号模拟，带限制和噪声",
   "reverb_desc": "带4条延迟线和反馈的混响",
   "distortion_desc": "通过tanh的软饱和/失真",
@@ -73,7 +76,5 @@
   "chorus_desc": "带3条延迟线的合唱",
   "flanger_desc": "带调制延迟的冲击器",
   "phaser_desc": "带4级全通滤波器的移相器",
-  "doubler_desc": "带轻微失谐和延迟的加倍器",
-  "monitor": "听到自己的声音",
-  "monitor_hint": "关闭时，处理后的声音不会通过扬声器播放。要将其发送到其他应用（Discord、游戏），请将虚拟麦克风选为输出设备，并开启'听到自己的声音'。"
+  "doubler_desc": "带轻微失谐和延迟的加倍器"
 }

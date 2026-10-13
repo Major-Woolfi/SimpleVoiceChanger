@@ -28,7 +28,7 @@ func (l *LowCut) Process(samples []float32, strength float64) {
 	rate := 48000.0
 	rc := 1.0 / (2.0 * math.Pi * cut)
 	alpha := 1.0 / (rc*rate + 1.0)
-	mix := 0.7 * norm
+	mix := norm
 	for i, s := range samples {
 		low := float32(float64(l.state) + alpha*(float64(s)-float64(l.state)))
 		l.state = low

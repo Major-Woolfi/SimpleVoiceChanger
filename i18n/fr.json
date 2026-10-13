@@ -29,6 +29,7 @@
   "info": "Information",
   "test_in_progress": "Test de la voix en cours...",
   "test_complete": "Test terminé",
+  "test_voice_stop": "Arrêter le test de la voix",
   "preset_saved": "Preset sauvegardé",
   "preset_loaded": "Preset chargé",
   "preset_deleted": "Preset supprimé",
@@ -50,6 +51,7 @@
   "high_cut_name": "Coupe-haut",
   "formant_name": "Déplacement de formants",
   "compressor_name": "Compresseur",
+  "amplifier_name": "Amplificateur",
   "radio_name": "Effet radio",
   "reverb_name": "Réverbération",
   "distortion_name": "Distorsion",
@@ -65,6 +67,7 @@
   "high_cut_desc": "Filtre passe-bas (supprime hautes fréquences > 16kHz)",
   "formant_desc": "Déplacement des formants pour changement de timbre vocal",
   "compressor_desc": "Compresseur dynamique (ratio 4:1, attack/release)",
+  "amplifier_desc": "Augmentation du volume avec limiteur doux (jusqu'à 4x)",
   "radio_desc": "Émulation signal radio avec limitation et bruit",
   "reverb_desc": "Réverbération avec 4 lignes de retard et retour",
   "distortion_desc": "Saturation/distorsion douce via tanh",
@@ -73,7 +76,5 @@
   "chorus_desc": "Chœur avec 3 voix retardées",
   "flanger_desc": "Flanneur avec délai modulé",
   "phaser_desc": "Phaseur avec 4 étages filtres all-pass",
-  "doubler_desc": "Doubleur avec légère désaccord et délai",
-  "monitor": "Entendre ma propre voix",
-  "monitor_hint": "Désactivé, la voix traitée n'est pas renvoyée dans vos haut-parleurs. Pour l'envoyer à une autre application (Discord, jeux), choisissez un micro virtuel comme périphérique de sortie et activez 'Entendre ma propre voix'."
+  "doubler_desc": "Doubleur avec légère désaccord et délai"
 }

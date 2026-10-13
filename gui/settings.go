@@ -22,7 +22,6 @@ type SettingsPanel struct {
 	outputSelect    *widget.Select
 	themeSelect     *widget.Select
 	langSelect      *widget.Select
-	monitorCheck    *widget.Check
 	updating        bool
 }
 
@@ -87,25 +86,12 @@ func (s *SettingsPanel) Build() fyne.CanvasObject {
 		s.app.i18n.SetLocale(code)
 	})
 
-	// Monitor: when off, the processed voice is never played back through the
-	// output device, so the user does not hear their own voice. Point the
-	// output device at a virtual microphone to feed the changed voice to
-	// other apps/games.
-	s.monitorCheck = widget.NewCheck(s.app.t("monitor"), func(on bool) {
-		s.config.Monitor = on
-		_ = s.config.Save()
-		if s.app.engine != nil {
-			s.app.engine.SetMonitor(on)
-		}
-	})
-
 	// Programmatic SetSelected fires OnChanged in Fyne; suppress it while we
 	// initialise the current values, otherwise the locale callback rebuilds
 	// the whole UI and recurses forever.
 	s.updating = true
 	s.themeSelect.SetSelected(themeCodeToLabel(s.app.t, s.config.Theme))
 	s.langSelect.SetSelected(localeLabel(s.app.i18n.Current()))
-	s.monitorCheck.SetChecked(s.config.Monitor)
 	s.selectInputDevice(defaultLabel)
 	s.selectOutputDevice(defaultLabel)
 	s.updating = false
@@ -134,17 +120,12 @@ func (s *SettingsPanel) Build() fyne.CanvasObject {
 		s.card("buffer_size", s.bufferSizeEntry),
 		s.card("theme", s.themeSelect),
 		s.card("language", s.langSelect),
-		s.card("monitor", s.monitorCheck),
 	)
-
-	hint := widget.NewLabelWithStyle(s.app.t("monitor_hint"), fyne.TextAlignLeading, fyne.TextStyle{Italic: true})
-	hint.Wrapping = fyne.TextWrapWord
 
 	return container.NewVBox(
 		widget.NewLabelWithStyle(s.app.t("settings"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		widget.NewSeparator(),
 		grid,
-		hint,
 		container.NewHBox(layout.NewSpacer(), saveBtn),
 	)
 }

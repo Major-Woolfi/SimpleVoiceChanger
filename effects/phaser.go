@@ -2,10 +2,15 @@ package effects
 
 import "math"
 
+// Phaser is built from four cascaded one-pole allpass filters whose
+// coefficients are swept by an LFO. The sweeping notch phase-cancellations
+// give the classic phaser "whoosh". (The previous version was four plain
+// smoothers, which simply dulled the voice.)
 type Phaser struct {
 	BaseEffect
-	phase  float64
-	stages []float32
+	phase float64
+	x     [4]float64
+	y     [4]float64
 }
 
 func NewPhaser() *Phaser {
@@ -15,7 +20,6 @@ func NewPhaser() *Phaser {
 			strength: 0,
 			category: "voices",
 		},
-		stages: make([]float32, 4),
 	}
 }
 
@@ -25,26 +29,23 @@ func (p *Phaser) Process(samples []float32, strength float64) {
 	}
 	norm := strength / 100
 	mix := 0.6 * norm
-	// The allpass notches sweep at 0.3-0.8Hz for a slow, familiar phaser swell.
 	lfoHz := 0.3 + 0.5*norm
 	step := lfoHz * 2 * math.Pi / 48000
 	for i, s := range samples {
 		val := float64(s)
-		for j := range p.stages {
-			coef := 0.15 + 0.45*norm + math.Sin(p.phase+float64(j)*0.7)*0.03
-			if coef < 0.02 {
-				coef = 0.02
-			}
-			if coef > 0.9 {
-				coef = 0.9
-			}
-			val = float64(p.stages[j]) + coef*(val-float64(p.stages[j]))
-			p.stages[j] = float32(val)
+		for j := 0; j < 4; j++ {
+			// Allpass coefficient sweeps 0.10..0.65 with per-stage phase offset.
+			coef := 0.10 + 0.55*(0.5+0.5*math.Sin(p.phase+float64(j)*1.1))
+			xo := val
+			yo := coef*xo + p.x[j] - coef*p.y[j]
+			p.x[j] = xo
+			p.y[j] = yo
+			val = yo
 		}
+		samples[i] = float32(float64(s)*(1-mix) + val*mix)
 		p.phase += step
 		if p.phase > 2*math.Pi {
 			p.phase -= 2 * math.Pi
 		}
-		samples[i] = float32(float64(s)*(1.0-mix) + val*mix)
 	}
 }

@@ -2,11 +2,16 @@ package effects
 
 import "math"
 
+// Chorus is a classic modulated-delay chorus: three voices sweep through a
+// shared delay line with fractional (interpolated) reads so the pitch bends
+// smoothly instead of zipping. Mix grows with strength for a clearly audible
+// thickening.
 type Chorus struct {
 	BaseEffect
-	phase float64
-	buf   []float32
-	pos   int
+	phase   float64
+	buf     []float32
+	pos     int
+	prevWet float64
 }
 
 func NewChorus() *Chorus {
@@ -25,23 +30,29 @@ func (c *Chorus) Process(samples []float32, strength float64) {
 		return
 	}
 	norm := strength / 100
-	mix := 0.5 * norm
-	// LFO sweeps the delay line between ~12ms and ~29ms at 0.25-0.7Hz so the
-	// voice thickens smoothly instead of warbling (a fast LFO sounds broken).
-	lfoHz := 0.25 + 0.45*norm
+	mix := 0.55 * norm
+	feedback := 0.35 * norm
+	const base = 300.0  // ~6ms
+	const depth = 700.0 // sweep to ~21ms
+	lfoHz := 0.25 + 0.55*norm
 	step := lfoHz * 2 * math.Pi / 48000
-	const base = 600
-	const maxDepth = 800.0
+	n := len(c.buf)
 	for i, s := range samples {
-		c.buf[c.pos] = s
-		c.pos = (c.pos + 1) % len(c.buf)
-		delay := base + int(maxDepth*(0.5+0.5*math.Sin(c.phase)))
-		read := c.pos - delay
-		if read < 0 {
-			read += len(c.buf)
+		c.buf[c.pos] = float32(float64(s) + feedback*c.prevWet)
+		c.pos = (c.pos + 1) % n
+		wet := 0.0
+		for v := 0; v < 3; v++ {
+			delay := base + depth*(0.5+0.5*math.Sin(c.phase+float64(v)*2.094))
+			r := float64(c.pos) - delay
+			i0 := int(math.Floor(r))
+			frac := r - float64(i0)
+			i0 = ((i0 % n) + n) % n
+			i1 := (i0 + 1) % n
+			wet += float64(c.buf[i0])*(1-frac) + float64(c.buf[i1])*frac
 		}
-		wet := c.buf[read]
-		samples[i] = float32(float64(s)*(1.0-mix) + float64(wet)*mix)
+		wet /= 3
+		c.prevWet = wet
+		samples[i] = float32(float64(s)*(1-mix) + wet*mix)
 		c.phase += step
 		if c.phase > 2*math.Pi {
 			c.phase -= 2 * math.Pi

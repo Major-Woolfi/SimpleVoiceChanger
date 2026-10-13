@@ -34,14 +34,14 @@ func (r *Reverb) Process(samples []float32, strength float64) {
 		return
 	}
 	norm := strength / 100
-	mix := 0.38 * norm
-	fb := r.feedback * norm
+	mix := 0.45 * norm
+	fb := 0.35 + 0.25*norm
 	for i, s := range samples {
 		acc := float64(s) * (1.0 - mix)
 		for j := range r.delays {
 			delayed := r.delays[j][r.pos[j]]
 			// Damped feedback keeps the tail from getting metallic or unstable.
-			lp := r.lowpass[j] + 0.35*(float32(float64(delayed)*fb)-r.lowpass[j])
+			lp := r.lowpass[j] + 0.3*(float32(float64(delayed)*fb)-r.lowpass[j])
 			r.lowpass[j] = lp
 			r.delays[j][r.pos[j]] = s + lp
 			r.pos[j] = (r.pos[j] + 1) % len(r.delays[j])

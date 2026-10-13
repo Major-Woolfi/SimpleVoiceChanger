@@ -44,6 +44,7 @@ func buildEngine(sampleRate, bufferSize int, inputDevice, outputDevice string) (
 	engine.RegisterEffect(effects.NewHighCut())
 	engine.RegisterEffect(effects.NewFormant())
 	engine.RegisterEffect(effects.NewCompressor())
+	engine.RegisterEffect(effects.NewAmplifier())
 	engine.RegisterEffect(effects.NewRadioEffect())
 	engine.RegisterEffect(effects.NewReverb())
 	engine.RegisterEffect(effects.NewDistortion())

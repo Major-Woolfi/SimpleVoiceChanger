@@ -29,6 +29,7 @@
   "info": "Information",
   "test_in_progress": "Stimme wird getestet...",
   "test_complete": "Test abgeschlossen",
+  "test_voice_stop": "Stimmentest beenden",
   "preset_saved": "Preset gespeichert",
   "preset_loaded": "Preset geladen",
   "preset_deleted": "Preset gelöscht",
@@ -50,6 +51,7 @@
   "high_cut_name": "Höhenschnitt",
   "formant_name": "Formantverschiebung",
   "compressor_name": "Kompressor",
+  "amplifier_name": "Verstärker",
   "radio_name": "Radioeffekt",
   "reverb_name": "Hall",
   "distortion_name": "Verzerrung",
@@ -65,6 +67,7 @@
   "high_cut_desc": "Tiefpassfilter (entfernt hohe Frequenzen > 16kHz)",
   "formant_desc": "Formantenverschiebung für Stimmklangänderung",
   "compressor_desc": "Dynamikkompressor (ratio 4:1, attack/release)",
+  "amplifier_desc": "Lautstärkeverstärkung mit weichem Begrenzer (bis zu 4x)",
   "radio_desc": "Radiosignal-Emulation mit Begrenzung und Rauschen",
   "reverb_desc": "Hall mit 4 Verzögerungsleitungen und Feedback",
   "distortion_desc": "Weiche Sättigung/Verzerrung via tanh",
@@ -73,7 +76,5 @@
   "chorus_desc": "Chorus mit 3 verzögerten Stimmen",
   "flanger_desc": "Flanger mit modulierter Verzögerung",
   "phaser_desc": "Phaser mit 4-stufigen Allpass-Filtern",
-  "doubler_desc": "Doubler mit leichter Verstimmung und Verzögerung",
-  "monitor": "Eigene Stimme hören",
-  "monitor_hint": "Wenn aus, wird die bearbeitete Stimme nicht über Ihre Lautsprecher ausgegeben. Um sie an eine andere App (Discord, Spiele) zu senden, wählen Sie ein virtuelles Mikrofon als Ausgabegerät und aktivieren Sie 'Eigene Stimme hören'."
+  "doubler_desc": "Doubler mit leichter Verstimmung und Verzögerung"
 }

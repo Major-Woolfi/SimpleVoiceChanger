@@ -25,7 +25,7 @@ func (f *Formant) Process(samples []float32, strength float64) {
 		return
 	}
 	norm := strength / 100
-	mix := 0.75 * norm
+	mix := 0.85 * norm
 	// A resonant band-pass ("talk-box") whose centre shifts upward with
 	// strength. Unity gain at the centre keeps the voice loud; the formant
 	// colour changes instead of the voice fading away.
