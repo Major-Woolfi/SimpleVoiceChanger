@@ -4,16 +4,19 @@ import "math"
 
 type Compressor struct {
 	BaseEffect
-	envelope float64
+	sampleRate int
+	envelope   float64
 }
 
-func NewCompressor() *Compressor {
+func NewCompressor(sampleRate int) *Compressor {
 	return &Compressor{
 		BaseEffect: BaseEffect{
 			name:     "compressor",
 			strength: 0,
 			category: "dynamics",
 		},
+		sampleRate: sampleRate,
+		envelope:   1.0,
 	}
 }
 
@@ -22,25 +25,35 @@ func (c *Compressor) Process(samples []float32, strength float64) {
 		return
 	}
 	norm := strength / 100
-	threshold := 0.20 + 0.10*norm
-	ratio := 6.0
-	// 5ms attack and 80ms release: fast enough to catch peaks, slow enough to
-	// avoid the clicky "pumping" distortion that instant smoothing caused.
-	attack := 1.0 - math.Exp(-1.0/(48000.0*0.005))
-	release := 1.0 - math.Exp(-1.0/(48000.0*0.080))
-	makeup := 1.0 + 0.8*norm
+	// Threshold drops as strength grows: more strength = compress more of the signal.
+	threshold := 0.35 - 0.25*norm
+	// Ratio grows with strength: 2:1 at low settings up to 10:1 at max.
+	ratio := 2.0 + 8.0*norm
+	attack := 1.0 - math.Exp(-1.0/(float64(c.sampleRate)*0.003))
+	release := 1.0 - math.Exp(-1.0/(float64(c.sampleRate)*0.080))
 	for i, s := range samples {
+		// Envelope detector: smooth absolute value of input.
 		absS := math.Abs(float64(s))
-		gain := 1.0
+		var gain float64
 		if absS > threshold {
 			over := absS / threshold
-			gain = 1.0/over + (1.0-1.0/over)/ratio
+			gain = math.Pow(over, 1.0/ratio-1.0)
+		} else {
+			gain = 1.0
 		}
+		// Smooth gain envelope: fast attack on peaks, slow release.
 		if gain < c.envelope {
 			c.envelope += (gain - c.envelope) * attack
 		} else {
 			c.envelope += (gain - c.envelope) * release
 		}
-		samples[i] = float32(float64(s) * math.Min(1.15, (0.5+0.5*c.envelope)*makeup))
+		// Soft knee limiter instead of hard clip.
+		out := float64(s) * c.envelope
+		if out > 0.95 {
+			out = 0.95 - (0.95-out)*(0.95-out)
+		} else if out < -0.95 {
+			out = -0.95 + (0.95+out)*(0.95+out)
+		}
+		samples[i] = float32(out)
 	}
 }

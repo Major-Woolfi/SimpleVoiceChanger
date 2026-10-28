@@ -8,18 +8,20 @@ import "math"
 // smoothers, which simply dulled the voice.)
 type Phaser struct {
 	BaseEffect
-	phase float64
-	x     [4]float64
-	y     [4]float64
+	sampleRate int
+	phase      float64
+	x          [4]float64
+	y          [4]float64
 }
 
-func NewPhaser() *Phaser {
+func NewPhaser(sampleRate int) *Phaser {
 	return &Phaser{
 		BaseEffect: BaseEffect{
 			name:     "phaser",
 			strength: 0,
 			category: "voices",
 		},
+		sampleRate: sampleRate,
 	}
 }
 
@@ -30,7 +32,7 @@ func (p *Phaser) Process(samples []float32, strength float64) {
 	norm := strength / 100
 	mix := 0.6 * norm
 	lfoHz := 0.3 + 0.5*norm
-	step := lfoHz * 2 * math.Pi / 48000
+	step := lfoHz * 2 * math.Pi / float64(p.sampleRate)
 	for i, s := range samples {
 		val := float64(s)
 		for j := 0; j < 4; j++ {

@@ -186,7 +186,7 @@ func (p *PresetPanel) importPreset() {
 			return
 		}
 
-		err = p.config.SavePreset(preset.Name, preset.Effects)
+		err = p.config.SavePresetWith(preset.Name, preset.Pitch, preset.Effects)
 		if err != nil {
 			p.app.ShowError(p.app.t("error"), err.Error())
 			return

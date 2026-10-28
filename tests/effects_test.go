@@ -20,7 +20,7 @@ func TestAntiNoiseZeroStrength(t *testing.T) {
 }
 
 func TestNoiseSuppressorZeroStrength(t *testing.T) {
-	e := effects.NewNoiseSuppressor()
+	e := effects.NewNoiseSuppressor(48000)
 	samples := []float32{0.5, 0.3, -0.2}
 	orig := append([]float32{}, samples...)
 	e.Process(samples, 0)
@@ -32,7 +32,7 @@ func TestNoiseSuppressorZeroStrength(t *testing.T) {
 }
 
 func TestEffectStrengthBounds(t *testing.T) {
-	e := effects.NewDistortion()
+	e := effects.NewDistortion(48000)
 	e.SetStrength(-10)
 	if e.Strength() != 0 {
 		t.Errorf("negative strength not clamped: %f", e.Strength())
@@ -73,20 +73,20 @@ func TestAllEffectsProcessZero(t *testing.T) {
 	orig := append([]float32{}, samples...)
 	constructors := []func() effects.Effect{
 		func() effects.Effect { return effects.NewAntiNoise(48000) },
-		func() effects.Effect { return effects.NewNoiseSuppressor() },
-		func() effects.Effect { return effects.NewLowCut() },
-		func() effects.Effect { return effects.NewHighCut() },
-		func() effects.Effect { return effects.NewFormant() },
-		func() effects.Effect { return effects.NewCompressor() },
-		func() effects.Effect { return effects.NewRadioEffect() },
-		func() effects.Effect { return effects.NewReverb() },
-		func() effects.Effect { return effects.NewDistortion() },
-		func() effects.Effect { return effects.NewSaturation() },
-		func() effects.Effect { return effects.NewHarmonyEngine() },
-		func() effects.Effect { return effects.NewChorus() },
-		func() effects.Effect { return effects.NewFlanger() },
-		func() effects.Effect { return effects.NewPhaser() },
-		func() effects.Effect { return effects.NewDoubler() },
+		func() effects.Effect { return effects.NewNoiseSuppressor(48000) },
+		func() effects.Effect { return effects.NewLowCut(48000) },
+		func() effects.Effect { return effects.NewHighCut(48000) },
+		func() effects.Effect { return effects.NewFormant(48000) },
+		func() effects.Effect { return effects.NewCompressor(48000) },
+		func() effects.Effect { return effects.NewRadioEffect(48000) },
+		func() effects.Effect { return effects.NewReverb(48000) },
+		func() effects.Effect { return effects.NewDistortion(48000) },
+		func() effects.Effect { return effects.NewSaturation(48000) },
+		func() effects.Effect { return effects.NewHarmonyEngine(48000) },
+		func() effects.Effect { return effects.NewChorus(48000) },
+		func() effects.Effect { return effects.NewFlanger(48000) },
+		func() effects.Effect { return effects.NewPhaser(48000) },
+		func() effects.Effect { return effects.NewDoubler(48000) },
 	}
 	for _, c := range constructors {
 		e := c()
@@ -108,20 +108,20 @@ func TestAllEffectsProcessMax(t *testing.T) {
 	}
 	constructors := []func() effects.Effect{
 		func() effects.Effect { return effects.NewAntiNoise(48000) },
-		func() effects.Effect { return effects.NewNoiseSuppressor() },
-		func() effects.Effect { return effects.NewLowCut() },
-		func() effects.Effect { return effects.NewHighCut() },
-		func() effects.Effect { return effects.NewFormant() },
-		func() effects.Effect { return effects.NewCompressor() },
-		func() effects.Effect { return effects.NewRadioEffect() },
-		func() effects.Effect { return effects.NewReverb() },
-		func() effects.Effect { return effects.NewDistortion() },
-		func() effects.Effect { return effects.NewSaturation() },
-		func() effects.Effect { return effects.NewHarmonyEngine() },
-		func() effects.Effect { return effects.NewChorus() },
-		func() effects.Effect { return effects.NewFlanger() },
-		func() effects.Effect { return effects.NewPhaser() },
-		func() effects.Effect { return effects.NewDoubler() },
+		func() effects.Effect { return effects.NewNoiseSuppressor(48000) },
+		func() effects.Effect { return effects.NewLowCut(48000) },
+		func() effects.Effect { return effects.NewHighCut(48000) },
+		func() effects.Effect { return effects.NewFormant(48000) },
+		func() effects.Effect { return effects.NewCompressor(48000) },
+		func() effects.Effect { return effects.NewRadioEffect(48000) },
+		func() effects.Effect { return effects.NewReverb(48000) },
+		func() effects.Effect { return effects.NewDistortion(48000) },
+		func() effects.Effect { return effects.NewSaturation(48000) },
+		func() effects.Effect { return effects.NewHarmonyEngine(48000) },
+		func() effects.Effect { return effects.NewChorus(48000) },
+		func() effects.Effect { return effects.NewFlanger(48000) },
+		func() effects.Effect { return effects.NewPhaser(48000) },
+		func() effects.Effect { return effects.NewDoubler(48000) },
 	}
 	for _, c := range constructors {
 		e := c()

@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/Major-Woolfi/SimpleVoiceChanger/audio"
 	"github.com/Major-Woolfi/SimpleVoiceChanger/core"
 	"github.com/Major-Woolfi/SimpleVoiceChanger/i18n"
 )
@@ -27,6 +28,7 @@ type App struct {
 		GetEffectStrengths() map[string]float64
 		SelfTest() error
 		SetMonitor(on bool)
+		SetPitch(semi float64)
 	}
 	service interface {
 		Start() error
@@ -43,8 +45,12 @@ type App struct {
 	effectsPanel      *EffectsPanel
 	presetSelect      *widget.Select
 	testBtn           *widget.Button
+	monitorCheckBox   *widget.Check
+	inputStatusLbl    *widget.Label
+	outputStatusLbl   *widget.Label
 	testing           bool
 	startedForTest    bool
+	monitorBeforeTest bool // user's monitor setting before the test started
 	syncing           bool
 	onToggle          func(enabled bool)
 	onSettingsApplied func()
@@ -60,7 +66,7 @@ func newAppWith(a fyne.App) *App {
 		a.SetIcon(icon)
 	}
 
-	w := a.NewWindow("SimpleVoiceChanger")
+	w := a.NewWindow("Войсчейнжер")
 	w.Resize(fyne.NewSize(900, 650))
 	w.SetMaster()
 
@@ -178,6 +184,10 @@ func (a *App) loadPresetInto(name string) error {
 			a.engine.SetEffectStrength(k, v)
 		}
 	}
+	a.config.Pitch = preset.Pitch
+	if a.engine != nil {
+		a.engine.SetPitch(preset.Pitch)
+	}
 	a.config.SelectedPreset = name
 	_ = a.config.Save()
 	a.RefreshEffectSliders()
@@ -239,6 +249,7 @@ func (a *App) SetEngine(engine interface {
 	GetEffectStrengths() map[string]float64
 	SelfTest() error
 	SetMonitor(on bool)
+	SetPitch(semi float64)
 }) {
 	a.engine = engine
 }
@@ -290,18 +301,14 @@ func (a *App) stopAudio() {
 func (a *App) Toggle() {
 	a.running = !a.running
 	if a.running {
+		if a.engine != nil {
+			a.engine.SetMonitor(a.config.Monitor)
+		}
 		if err := a.startAudio(); err != nil {
 			a.ShowError(a.t("error"), err.Error())
 			a.running = false
 		}
 	} else {
-		if a.testing {
-			if a.engine != nil {
-				a.engine.SetMonitor(false)
-			}
-			a.testing = false
-			a.updateTestButtonText()
-		}
 		a.stopAudio()
 	}
 	a.updateStatus()
@@ -326,7 +333,7 @@ func (a *App) updateStatus() {
 }
 
 func (a *App) buildMainMenu() fyne.CanvasObject {
-	toggleBtn := widget.NewButton(a.t("toggle_voice_changer"), func() {
+	toggleBtn := widget.NewButtonWithIcon(a.t("toggle_voice_changer"), theme.MediaPlayIcon(), func() {
 		a.Toggle()
 	})
 	toggleBtn.Importance = widget.HighImportance
@@ -343,51 +350,75 @@ func (a *App) buildMainMenu() fyne.CanvasObject {
 		a.syncing = false
 	}
 
-	testBtn := widget.NewButton(a.t("test_voice"), func() {
+	testBtn := widget.NewButtonWithIcon(a.t("test_voice"), theme.MediaRecordIcon(), func() {
 		a.testVoice()
 	})
 	a.testBtn = testBtn
 
-	importBtn := widget.NewButton(a.t("import_preset"), func() {
+	monitorChk := widget.NewCheck(a.t("monitor"), func(on bool) {
+		a.config.Monitor = on
+		if a.engine != nil {
+			a.engine.SetMonitor(on)
+		}
+		_ = a.config.Save()
+	})
+	monitorChk.SetChecked(a.config.Monitor)
+	a.monitorCheckBox = monitorChk
+
+	importBtn := widget.NewButtonWithIcon(a.t("import_preset"), theme.ContentAddIcon(), func() {
 		a.importPreset()
 	})
-	exportBtn := widget.NewButton(a.t("export_preset"), func() {
+	exportBtn := widget.NewButtonWithIcon(a.t("export_preset"), theme.MailSendIcon(), func() {
 		a.exportPreset()
 	})
 
 	statusLbl := widget.NewLabel(a.t("status") + ": " + a.t("stopped"))
 	a.statusLbl = statusLbl
 
-	topRow := container.NewHBox(
-		layout.NewSpacer(),
+	inputStatusLbl := widget.NewLabel("")
+	a.inputStatusLbl = inputStatusLbl
+	outputStatusLbl := widget.NewLabel("")
+	a.outputStatusLbl = outputStatusLbl
+
+	a.RefreshDeviceStatus()
+
+	// --- Top row: toggle, preset, test, monitor, import/export ---
+	leftControls := container.NewHBox(
 		toggleBtn,
+		container.NewVBox(layout.NewSpacer(), presetSelect),
+	)
+	middleControls := container.NewHBox(testBtn, monitorChk)
+	rightControls := container.NewHBox(importBtn, exportBtn)
+	topBar := container.NewBorder(nil, nil, leftControls, rightControls, middleControls)
+
+	// --- Status bar: status + device info ---
+	deviceRow := container.NewHBox(
+		container.NewHBox(widget.NewLabel("  "), inputStatusLbl),
 		layout.NewSpacer(),
-		presetSelect,
+		container.NewHBox(widget.NewLabel("  "), outputStatusLbl),
+	)
+	statusRow := container.NewHBox(
+		statusLbl,
 		layout.NewSpacer(),
-		testBtn,
-		layout.NewSpacer(),
-		importBtn,
-		exportBtn,
-		layout.NewSpacer(),
+		deviceRow,
 	)
 
-	bottomRow := container.NewVBox(layout.NewSpacer(), statusLbl)
-
-	return container.NewBorder(topRow, nil, nil, nil, bottomRow)
+	mainContent := container.NewBorder(topBar, nil, nil, nil, a.tabs)
+	bottomBar := container.NewBorder(nil, statusRow, nil, nil, mainContent)
+	return bottomBar
 }
 
 // testVoice toggles a live broadcast of the processed voice to the output
-// device (speakers): the first press starts it, the second stops it. It only
-// affects the test button itself and never touches the main voice-changer
-// button or its status.
+// device (speakers): the first press starts it, the second stops it.
 func (a *App) testVoice() {
 	if a.engine == nil {
 		a.ShowError(a.t("error"), a.t("audio_init_failed"))
 		return
 	}
 	if a.testing {
+		// Restore the user's monitor preference before stopping the test.
 		if a.engine != nil {
-			a.engine.SetMonitor(false)
+			a.engine.SetMonitor(a.monitorBeforeTest)
 		}
 		if a.startedForTest && !a.running {
 			a.stopAudio()
@@ -396,6 +427,8 @@ func (a *App) testVoice() {
 		a.updateTestButtonText()
 		return
 	}
+	// Remember user's current monitor preference.
+	a.monitorBeforeTest = a.config.Monitor
 	a.startedForTest = !a.running
 	if !a.running {
 		if err := a.startAudio(); err != nil {
@@ -426,7 +459,17 @@ func (a *App) exportPreset() {
 	a.presetPanel.exportPreset()
 }
 
+// buildContent builds the tabbed UI. Panels are created once and cached in
+// the App struct; on locale change rebuildUI updates the tab titles without
+// recreating the widgets, so slider values, preset selection and form state
+// survive a language switch.
 func (a *App) buildContent() fyne.CanvasObject {
+	if a.tabs != nil && a.effectsPanel != nil && a.presetPanel != nil {
+		a.updateTabTitles()
+		a.tabs.Refresh()
+		return a.buildMainMenu()
+	}
+
 	effectsPanel := NewEffectsPanel(a)
 	presetsPanel := NewPresetPanel(a, a.config)
 	a.presetPanel = presetsPanel
@@ -440,8 +483,52 @@ func (a *App) buildContent() fyne.CanvasObject {
 	)
 	a.tabs.SetTabLocation(container.TabLocationTop)
 
-	menu := a.buildMainMenu()
-	return container.NewBorder(menu, nil, nil, nil, a.tabs)
+	return a.buildMainMenu()
+}
+
+// updateTabTitles refreshes the tab captions after a locale change.
+func (a *App) updateTabTitles() {
+	if a.tabs == nil || len(a.tabs.Items) < 3 {
+		return
+	}
+	a.tabs.Items[0].Text = a.t("effects")
+	a.tabs.Items[1].Text = a.t("presets")
+	a.tabs.Items[2].Text = a.t("settings")
+}
+
+// RefreshDeviceStatus updates the input/output device status labels
+// shown below the main menu bar. It also reports the built-in loopback capture
+// device, which is what a chat program has to pick as its microphone to hear
+// the processed voice.
+func (a *App) RefreshDeviceStatus() {
+	if a.inputStatusLbl == nil || a.outputStatusLbl == nil {
+		return
+	}
+	inputDevices := audio.ListInputDevices()
+	outputDevices := audio.ListOutputDevices()
+	inputMsg := a.t("device_found")
+	if len(inputDevices) == 0 {
+		inputMsg = a.t("device_not_found")
+	}
+	outputMsg := a.t("device_found")
+	if len(outputDevices) == 0 {
+		outputMsg = a.t("device_not_found")
+	}
+	// The processed voice always goes to the selected output device. A chat
+	// program reads it back through the built-in mix recorder (Stereo Mix),
+	// so the status line names that recorder when the system provides one.
+	outDev := a.config.OutputDevice
+	if outDev == "" {
+		outDev = a.t("default_device")
+	}
+	mix := audio.FindBuiltinLoopback()
+	micHint := a.t("virtual_mic_missing")
+	if mix != "" {
+		micHint = a.t("virtual_mic_found", mix)
+	}
+	a.inputStatusLbl.SetText(a.t("input_status", inputMsg))
+	a.outputStatusLbl.SetText(a.t("output_status", outputMsg) +
+		" | " + a.t("output_device") + ": " + outDev + " | " + micHint)
 }
 
 func (a *App) ShowInfo(title, message string) {

@@ -45,7 +45,7 @@ var hostAPIPreference = []portaudio.HostApiType{
 
 func matchesDirection(d *portaudio.DeviceInfo, input bool) bool {
 	if input {
-		return d.MaxInputChannels > 0 && !strings.Contains(d.Name, "[Loopback]")
+		return d.MaxInputChannels > 0
 	}
 	return d.MaxOutputChannels > 0
 }

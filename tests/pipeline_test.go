@@ -71,7 +71,7 @@ func TestEngineEffectSkipping(t *testing.T) {
 	engine.SetInput(cap)
 	engine.SetOutput(sink)
 
-	engine.RegisterEffect(effects.NewDistortion())
+	engine.RegisterEffect(effects.NewDistortion(48000))
 
 	if err := engine.Start(); err != nil {
 		t.Fatalf("start: %v", err)
@@ -89,7 +89,7 @@ func TestEngineRestart(t *testing.T) {
 	engine := audio.NewEngine(48000, 4)
 	engine.SetInput(&mockCapture{data: []float32{0.5, -0.5, 0.25, -0.25}})
 	engine.SetOutput(&mockSink{})
-	engine.RegisterEffect(effects.NewDistortion())
+	engine.RegisterEffect(effects.NewDistortion(48000))
 
 	if err := engine.Start(); err != nil {
 		t.Fatalf("first start: %v", err)
@@ -128,7 +128,7 @@ func TestEngineNoiseLayerSkippedWhenZero(t *testing.T) {
 	engine.Stop()
 }
 
-func TestEngineMonitorOffWritesNothing(t *testing.T) {
+func TestEngineMonitorDoesNotBlockMainOutput(t *testing.T) {
 	cap := &mockCapture{data: []float32{0.5, -0.5, 0.25, -0.25}}
 	sink := &mockSink{}
 	engine := audio.NewEngine(48000, 4)
@@ -139,17 +139,11 @@ func TestEngineMonitorOffWritesNothing(t *testing.T) {
 	if err := engine.Start(); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	time.Sleep(60 * time.Millisecond)
-	if sink.count() != 0 {
-		t.Fatalf("expected no samples with monitor off, got %d", sink.count())
-	}
-
-	// Turning monitoring on mid-run makes the engine write again.
-	engine.SetMonitor(true)
+	// Main output must receive processed audio even when self-listening is off.
 	waitForSamples(t, sink)
 	engine.Stop()
 	if sink.count() == 0 {
-		t.Fatal("no samples written after monitor enabled")
+		t.Fatal("main output got no samples with monitor off")
 	}
 }
 

@@ -4,18 +4,18 @@ import "math"
 
 type LowCut struct {
 	BaseEffect
-	cutoff float64
-	state  float32
+	sampleRate int
+	state      float32
 }
 
-func NewLowCut() *LowCut {
+func NewLowCut(sampleRate int) *LowCut {
 	return &LowCut{
 		BaseEffect: BaseEffect{
 			name:     "low_cut",
 			strength: 0,
 			category: "filter",
 		},
-		cutoff: 80.0,
+		sampleRate: sampleRate,
 	}
 }
 
@@ -25,9 +25,8 @@ func (l *LowCut) Process(samples []float32, strength float64) {
 	}
 	norm := strength / 100
 	cut := 40.0 + 420.0*norm
-	rate := 48000.0
 	rc := 1.0 / (2.0 * math.Pi * cut)
-	alpha := 1.0 / (rc*rate + 1.0)
+	alpha := 1.0 / (rc*float64(l.sampleRate) + 1.0)
 	mix := norm
 	for i, s := range samples {
 		low := float32(float64(l.state) + alpha*(float64(s)-float64(l.state)))

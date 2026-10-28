@@ -36,24 +36,25 @@ func buildEngine(sampleRate, bufferSize int, inputDevice, outputDevice string) (
 		}
 		playback = audio.NewDefaultPlayback()
 	}
+	engine.SetOutputDeviceName(outputDevice)
 	engine.SetOutput(playback)
 
 	engine.RegisterNoiseEffect(effects.NewAntiNoise(sampleRate))
-	engine.RegisterNoiseEffect(effects.NewNoiseSuppressor())
-	engine.RegisterEffect(effects.NewLowCut())
-	engine.RegisterEffect(effects.NewHighCut())
-	engine.RegisterEffect(effects.NewFormant())
-	engine.RegisterEffect(effects.NewCompressor())
+	engine.RegisterNoiseEffect(effects.NewNoiseSuppressor(sampleRate))
+	engine.RegisterEffect(effects.NewLowCut(sampleRate))
+	engine.RegisterEffect(effects.NewHighCut(sampleRate))
+	engine.RegisterEffect(effects.NewFormant(sampleRate))
+	engine.RegisterEffect(effects.NewCompressor(sampleRate))
 	engine.RegisterEffect(effects.NewAmplifier())
-	engine.RegisterEffect(effects.NewRadioEffect())
-	engine.RegisterEffect(effects.NewReverb())
-	engine.RegisterEffect(effects.NewDistortion())
-	engine.RegisterEffect(effects.NewSaturation())
-	engine.RegisterEffect(effects.NewHarmonyEngine())
-	engine.RegisterEffect(effects.NewChorus())
-	engine.RegisterEffect(effects.NewFlanger())
-	engine.RegisterEffect(effects.NewPhaser())
-	engine.RegisterEffect(effects.NewDoubler())
+	engine.RegisterEffect(effects.NewRadioEffect(sampleRate))
+	engine.RegisterEffect(effects.NewReverb(sampleRate))
+	engine.RegisterEffect(effects.NewDistortion(sampleRate))
+	engine.RegisterEffect(effects.NewSaturation(sampleRate))
+	engine.RegisterEffect(effects.NewHarmonyEngine(sampleRate))
+	engine.RegisterEffect(effects.NewChorus(sampleRate))
+	engine.RegisterEffect(effects.NewFlanger(sampleRate))
+	engine.RegisterEffect(effects.NewPhaser(sampleRate))
+	engine.RegisterEffect(effects.NewDoubler(sampleRate))
 
 	return engine, initErr
 }
@@ -76,6 +77,7 @@ func main() {
 		engine.SetEffectStrength(k, v)
 	}
 	engine.SetMonitor(cfg.Monitor)
+	engine.SetPitch(cfg.Pitch)
 
 	svc := service.NewService(engine)
 	app.SetService(svc)
@@ -113,6 +115,7 @@ func main() {
 			newEngine.SetEffectStrength(k, v)
 		}
 		newEngine.SetMonitor(cfg.Monitor)
+		newEngine.SetPitch(cfg.Pitch)
 		engine = newEngine
 		svc = service.NewService(engine)
 		app.SetEngine(engine)

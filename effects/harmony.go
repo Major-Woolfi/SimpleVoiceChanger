@@ -7,22 +7,29 @@ import "math"
 // thicker and doubled without gliding to a different musical pitch.
 type HarmonyEngine struct {
 	BaseEffect
-	phase float64
-	bufs  [][]float32
-	pos   int
+	sampleRate int
+	phase      float64
+	bufs       [][]float32
+	pos        int
 }
 
-func NewHarmonyEngine() *HarmonyEngine {
-	b1 := make([]float32, 4800)
-	b2 := make([]float32, 4800)
-	b3 := make([]float32, 4800)
+func NewHarmonyEngine(sampleRate int) *HarmonyEngine {
+	s := float64(sampleRate) / 48000.0
+	nBuf := int(4800 * s)
+	if nBuf < 1 {
+		nBuf = 1
+	}
+	b1 := make([]float32, nBuf)
+	b2 := make([]float32, nBuf)
+	b3 := make([]float32, nBuf)
 	return &HarmonyEngine{
 		BaseEffect: BaseEffect{
 			name:     "harmony",
 			strength: 0,
 			category: "voices",
 		},
-		bufs: [][]float32{b1, b2, b3},
+		sampleRate: sampleRate,
+		bufs:       [][]float32{b1, b2, b3},
 	}
 }
 
@@ -33,7 +40,7 @@ func (h *HarmonyEngine) Process(samples []float32, strength float64) {
 	norm := strength / 100
 	mix := 0.7 * norm
 	lfoHz := 1.0 + 1.0*norm
-	step := lfoHz * 2 * math.Pi / 48000
+	step := lfoHz * 2 * math.Pi / float64(h.sampleRate)
 	taps := 3
 	delays := [3]float64{640, 810, 990}
 	nBuf := len(h.bufs[0])

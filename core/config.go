@@ -62,6 +62,7 @@ type AppConfig struct {
 	Locale         string
 	Enabled        bool
 	Monitor        bool
+	Pitch          float64
 	EffectStren    map[string]float64
 	SelectedPreset string
 	ActivePresets  []string
@@ -70,6 +71,7 @@ type AppConfig struct {
 // EffectPreset is a named collection of effect strengths.
 type EffectPreset struct {
 	Name    string             `json:"name"`
+	Pitch   float64            `json:"pitch"`
 	Effects map[string]float64 `json:"effects"`
 }
 
@@ -80,6 +82,7 @@ func DefaultAppConfig() *AppConfig {
 		BufferSize:  512,
 		Theme:       "dark",
 		Enabled:     false,
+		Monitor:     true,
 		EffectStren: make(map[string]float64),
 	}
 }
@@ -112,6 +115,7 @@ func (c *AppConfig) Save() error {
 	data := map[string]interface{}{
 		"enabled":          c.Enabled,
 		"monitor":          c.Monitor,
+		"pitch":            c.Pitch,
 		"sample_rate":      c.SampleRate,
 		"buffer_size":      c.BufferSize,
 		"input_device":     c.InputDevice,
@@ -147,6 +151,9 @@ func (c *AppConfig) Load() error {
 	}
 	if v, ok := data["monitor"].(bool); ok {
 		c.Monitor = v
+	}
+	if v, ok := data["pitch"].(float64); ok {
+		c.Pitch = v
 	}
 	if v, ok := data["sample_rate"].(float64); ok {
 		c.SampleRate = int(v)
@@ -190,8 +197,15 @@ func (c *AppConfig) Load() error {
 	return nil
 }
 
-// SavePreset persists a named preset to disk.
+// SavePreset persists a named preset to disk, capturing the current pitch.
 func (c *AppConfig) SavePreset(name string, strengths map[string]float64) error {
+	return c.SavePresetWith(name, c.Pitch, strengths)
+}
+
+// SavePresetWith persists a named preset with an explicit pitch offset. It is
+// used by import, where the pitch must come from the file rather than the
+// live configuration.
+func (c *AppConfig) SavePresetWith(name string, pitch float64, strengths map[string]float64) error {
 	name, err := SanitizePresetName(name)
 	if err != nil {
 		return err
@@ -200,7 +214,7 @@ func (c *AppConfig) SavePreset(name string, strengths map[string]float64) error 
 	if err := os.MkdirAll(presetsDir, 0755); err != nil {
 		return fmt.Errorf("create presets dir: %w", err)
 	}
-	p := EffectPreset{Name: name, Effects: strengths}
+	p := EffectPreset{Name: name, Pitch: pitch, Effects: strengths}
 	raw, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal preset: %w", err)

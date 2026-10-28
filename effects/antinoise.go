@@ -7,7 +7,8 @@ type AntiNoise struct {
 	sampleRate int
 	floor      float32 // tracked noise floor of the room/mic
 	gateState  float32
-	openUntil  int
+	openUntil  int64 // absolute sample position the gate stays open until
+	frames     int64 // absolute processed-sample counter
 	floorDown  float64
 	floorUp    float64
 	gateAttack float64
@@ -35,6 +36,8 @@ func (a *AntiNoise) Process(samples []float32, strength float64) {
 		return
 	}
 	norm := strength / 100
+	hold := int64(a.sampleRate / 8)
+	duck := 0.25 - 0.2*norm
 	idx := 0
 	for idx < len(samples) {
 		n := len(samples) - idx
@@ -60,22 +63,24 @@ func (a *AntiNoise) Process(samples []float32, strength float64) {
 		}
 		a.floor = float32(floor)
 		// The gate opens when a frame is clearly louder than the estimated
-		// noise floor. Strength scales how aggressively quiet frames are cut.
+		// noise floor. The gate gain is applied smoothly so the effect never
+		// clicks, and the hold timer uses an absolute sample counter so it
+		// survives buffer boundaries.
 		threshold := math.Max(0.006, floor*(1.4+1.6*norm))
 
 		for j := idx; j < idx+n; j++ {
 			amp := math.Abs(float64(samples[j]))
 			if amp >= threshold {
+				a.openUntil = a.frames + hold
+			}
+			if a.frames <= a.openUntil {
 				a.gateState = float32(float64(a.gateState) + (1.0-float64(a.gateState))*a.gateAttack)
-				a.openUntil = j + a.sampleRate/8
-			} else if j >= a.openUntil {
+			} else {
 				a.gateState = float32(float64(a.gateState) + (0.0-float64(a.gateState))*a.gateRel)
 			}
-			if amp < threshold {
-				samples[j] = float32(float64(samples[j]) * (0.1 + 0.15*norm))
-			} else {
-				samples[j] = float32(float64(samples[j]) * (1.0 - 0.05*norm))
-			}
+			gain := duck + (1.0-duck)*float64(a.gateState)
+			samples[j] = float32(float64(samples[j]) * gain)
+			a.frames++
 		}
 		idx += n
 	}

@@ -4,21 +4,23 @@ import "math"
 
 type NoiseSuppressor struct {
 	BaseEffect
-	envelope float64
-	gate     float64
-	attack   float64
-	release  float64
+	sampleRate int
+	envelope   float64
+	gate       float64
+	attack     float64
+	release    float64
 }
 
-func NewNoiseSuppressor() *NoiseSuppressor {
+func NewNoiseSuppressor(sampleRate int) *NoiseSuppressor {
 	return &NoiseSuppressor{
 		BaseEffect: BaseEffect{
 			name:     "noise_suppressor",
 			strength: 0,
 			category: "noise",
 		},
-		attack:  1.0 - math.Exp(-1.0/(48000.0*0.002)),
-		release: 1.0 - math.Exp(-1.0/(48000.0*0.1)),
+		sampleRate: sampleRate,
+		attack:     1.0 - math.Exp(-1.0/(float64(sampleRate)*0.002)),
+		release:    1.0 - math.Exp(-1.0/(float64(sampleRate)*0.1)),
 	}
 }
 
@@ -31,7 +33,9 @@ func (n *NoiseSuppressor) Process(samples []float32, strength float64) {
 	}
 	norm := strength / 100
 	// Frames with an envelope below this absolute level are treated as noise.
-	threshold := 0.002 + 0.06*norm
+	// Threshold scales gently so even at strength 100 normal quiet speech
+	// is preserved; only near-silent room noise gets gated.
+	threshold := 0.002 + 0.018*norm
 	for i, s := range samples {
 		level := math.Abs(float64(s))
 		if level > n.envelope {
@@ -41,7 +45,7 @@ func (n *NoiseSuppressor) Process(samples []float32, strength float64) {
 		}
 		target := 1.0
 		if n.envelope < threshold {
-			target = 0.03 + 0.15*norm
+			target = 0.05 + 0.10*norm
 		}
 		if target > n.gate {
 			n.gate += (target - n.gate) * n.attack

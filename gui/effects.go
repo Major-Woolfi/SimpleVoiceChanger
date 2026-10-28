@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"strconv"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -13,6 +15,8 @@ type EffectsPanel struct {
 	sliders     map[string]*widget.Slider
 	labels      map[string]*widget.Label
 	effectsList []effects.EffectInfo
+	pitchSlider *widget.Slider
+	pitchLabel  *widget.Label
 }
 
 func NewEffectsPanel(app *App) *EffectsPanel {
@@ -27,6 +31,33 @@ func NewEffectsPanel(app *App) *EffectsPanel {
 func (e *EffectsPanel) Build(config *core.AppConfig) fyne.CanvasObject {
 	categoryContainers := make(map[string][]fyne.CanvasObject)
 	categoryOrder := []string{"noise", "filter", "modulation", "dynamics", "spatial", "voices"}
+
+	pitchTitle := widget.NewLabel(e.app.t("pitch_name"))
+	pitchTitle.TextStyle = fyne.TextStyle{Bold: true}
+	pitchDesc := widget.NewLabel(e.app.t("pitch_desc"))
+	pitchDesc.TextStyle = fyne.TextStyle{Italic: true}
+	pitchDesc.Wrapping = fyne.TextWrapWord
+
+	e.pitchSlider = widget.NewSlider(-12, 12)
+	e.pitchSlider.Step = 1
+	e.pitchSlider.SetValue(config.Pitch)
+	e.pitchLabel = widget.NewLabel("")
+	e.updatePitchLabel(config.Pitch)
+	e.pitchSlider.OnChanged = func(value float64) {
+		config.Pitch = value
+		e.updatePitchLabel(value)
+		if e.app.engine != nil {
+			e.app.engine.SetPitch(value)
+		}
+		_ = config.Save()
+	}
+	pitchRow := container.NewVBox(
+		pitchTitle,
+		pitchDesc,
+		e.pitchSlider,
+		e.pitchLabel,
+		widget.NewSeparator(),
+	)
 
 	for _, eff := range e.effectsList {
 		slider := widget.NewSlider(0, 100)
@@ -75,9 +106,26 @@ func (e *EffectsPanel) Build(config *core.AppConfig) fyne.CanvasObject {
 
 	return container.NewVScroll(
 		container.NewVBox(
-			append([]fyne.CanvasObject{widget.NewLabel(e.app.t("effects"))}, sections...)...,
+			append([]fyne.CanvasObject{
+				widget.NewLabel(e.app.t("effects")),
+				pitchRow,
+				widget.NewSeparator(),
+			}, sections...)...,
 		),
 	)
+}
+
+// updatePitchLabel shows the pitch offset in semitones with an explicit sign,
+// so it is obvious whether the voice goes up or down.
+func (e *EffectsPanel) updatePitchLabel(value float64) {
+	if e.pitchLabel == nil {
+		return
+	}
+	text := strconv.FormatFloat(value, 'f', 1, 64)
+	if value > 0 {
+		text = "+" + text
+	}
+	e.pitchLabel.SetText(e.app.t("pitch_format", text))
 }
 
 func (e *EffectsPanel) getEffectDescription(key string) string {
@@ -92,6 +140,11 @@ func (e *EffectsPanel) getEffectDescription(key string) string {
 // SyncFromConfig updates every slider and its label from the given config,
 // so the effects tab reflects strengths loaded from a preset or on startup.
 func (e *EffectsPanel) SyncFromConfig(config *core.AppConfig) {
+	if e.pitchSlider != nil {
+		e.pitchSlider.SetValue(config.Pitch)
+		e.updatePitchLabel(config.Pitch)
+		e.pitchSlider.Refresh()
+	}
 	for _, eff := range e.effectsList {
 		slider, ok := e.sliders[eff.Key]
 		if !ok {

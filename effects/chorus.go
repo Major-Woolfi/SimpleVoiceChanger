@@ -8,20 +8,23 @@ import "math"
 // thickening.
 type Chorus struct {
 	BaseEffect
-	phase   float64
-	buf     []float32
-	pos     int
-	prevWet float64
+	sampleRate int
+	phase      float64
+	buf        []float32
+	pos        int
+	prevWet    float64
 }
 
-func NewChorus() *Chorus {
+func NewChorus(sampleRate int) *Chorus {
+	s := float64(sampleRate) / 48000.0
 	return &Chorus{
 		BaseEffect: BaseEffect{
 			name:     "chorus",
 			strength: 0,
 			category: "voices",
 		},
-		buf: make([]float32, 4800),
+		sampleRate: sampleRate,
+		buf:        make([]float32, int(4800*s)),
 	}
 }
 
@@ -35,7 +38,7 @@ func (c *Chorus) Process(samples []float32, strength float64) {
 	const base = 300.0  // ~6ms
 	const depth = 700.0 // sweep to ~21ms
 	lfoHz := 0.25 + 0.55*norm
-	step := lfoHz * 2 * math.Pi / 48000
+	step := lfoHz * 2 * math.Pi / float64(c.sampleRate)
 	n := len(c.buf)
 	for i, s := range samples {
 		c.buf[c.pos] = float32(float64(s) + feedback*c.prevWet)

@@ -2,18 +2,28 @@ package effects
 
 type Reverb struct {
 	BaseEffect
-	delays   [][]float32
-	pos      []int
-	lowpass  []float32
-	feedback float64
+	sampleRate int
+	delays     [][]float32
+	pos        []int
+	lowpass    []float32
 }
 
-func NewReverb() *Reverb {
-	// Comb delays 20/32.7/47/60.7 ms give a room-like tail instead of a
-	// metallic slap.
-	dl := []int{960, 1568, 2256, 2912}
+func NewReverb(sampleRate int) *Reverb {
+	// Comb delay lengths scaled from a 48kHz reference to the actual rate so
+	// the room size stays constant when the sample rate changes.
+	s := float64(sampleRate) / 48000.0
+	dl := []int{
+		int(960 * s),
+		int(1568 * s),
+		int(2256 * s),
+		int(2912 * s),
+	}
 	delays := make([][]float32, len(dl))
 	for i, n := range dl {
+		if n < 1 {
+			dl[i] = 1
+			n = 1
+		}
 		delays[i] = make([]float32, n)
 	}
 	return &Reverb{
@@ -22,10 +32,10 @@ func NewReverb() *Reverb {
 			strength: 0,
 			category: "spatial",
 		},
-		delays:   delays,
-		pos:      []int{0, 0, 0, 0},
-		lowpass:  []float32{0, 0, 0, 0},
-		feedback: 0.38,
+		sampleRate: sampleRate,
+		delays:     delays,
+		pos:        make([]int, len(dl)),
+		lowpass:    make([]float32, len(dl)),
 	}
 }
 
@@ -36,12 +46,13 @@ func (r *Reverb) Process(samples []float32, strength float64) {
 	norm := strength / 100
 	mix := 0.45 * norm
 	fb := 0.35 + 0.25*norm
+	damp := 0.3 + 0.4*norm
 	for i, s := range samples {
 		acc := float64(s) * (1.0 - mix)
 		for j := range r.delays {
 			delayed := r.delays[j][r.pos[j]]
 			// Damped feedback keeps the tail from getting metallic or unstable.
-			lp := r.lowpass[j] + 0.3*(float32(float64(delayed)*fb)-r.lowpass[j])
+			lp := r.lowpass[j] + float32(damp)*(float32(float64(delayed)*fb)-r.lowpass[j])
 			r.lowpass[j] = lp
 			r.delays[j][r.pos[j]] = s + lp
 			r.pos[j] = (r.pos[j] + 1) % len(r.delays[j])

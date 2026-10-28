@@ -46,6 +46,7 @@ func (s *SettingsPanel) Build() fyne.CanvasObject {
 		s.config.InputDevice = deviceNameFromLabel(label, defaultLabel)
 		_ = s.config.Save()
 		s.app.rebuildAudio()
+		s.app.RefreshDeviceStatus()
 	})
 	s.inputSelect.PlaceHolder = defaultLabel
 
@@ -57,6 +58,7 @@ func (s *SettingsPanel) Build() fyne.CanvasObject {
 		s.config.OutputDevice = deviceNameFromLabel(label, defaultLabel)
 		_ = s.config.Save()
 		s.app.rebuildAudio()
+		s.app.RefreshDeviceStatus()
 	})
 	s.outputSelect.PlaceHolder = defaultLabel
 
